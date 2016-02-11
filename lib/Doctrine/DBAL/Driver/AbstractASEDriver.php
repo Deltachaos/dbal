@@ -43,18 +43,20 @@ abstract class AbstractASEDriver implements Driver, VersionAwarePlatformDriver
      */
     public function createDatabasePlatformForVersion($version)
     {
-        $versionParts = [];
-        if (!preg_match('/Adaptive Server Enterprise\/([0-9]+)\.([0-9]+).?([0-9]+)?.?([0-9]+)?\/.*/i', $version, $versionParts)) {
+        $matches = [];
+        if (!preg_match('/Adaptive Server Enterprise\/([0-9]+)\.?([0-9]+)?.?([0-9]+)?.?([0-9]+)?(\/.*)?/i', $version, $matches)) {
             throw DBALException::invalidPlatformVersionSpecified(
                 $version,
                 '<product>/<major_version>.<minor_version>.<patch_version>.<build_version>'
             );
         }
 
-        for ($i = 1; $i <= 4; $i++) {
-            if (!isset($versionParts[$i])) {
-                $versionParts[$i] = "0";
+        $versionParts = [];
+        for ($i = 0; $i <= 4; $i++) {
+            if (!isset($matches[$i])) {
+                $matches[$i] = "0";
             }
+            $versionParts[$i] = $matches[$i];
         }
 
         array_shift($versionParts);
