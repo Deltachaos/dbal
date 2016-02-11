@@ -45,10 +45,12 @@ final class DriverManager
          'oci8'               => 'Doctrine\DBAL\Driver\OCI8\Driver',
          'ibm_db2'            => 'Doctrine\DBAL\Driver\IBMDB2\DB2Driver',
          'pdo_sqlsrv'         => 'Doctrine\DBAL\Driver\PDOSqlsrv\Driver',
+         'pdo_ase'            => 'Doctrine\DBAL\Driver\PDOASE\Driver',
          'mysqli'             => 'Doctrine\DBAL\Driver\Mysqli\Driver',
          'drizzle_pdo_mysql'  => 'Doctrine\DBAL\Driver\DrizzlePDOMySql\Driver',
          'sqlanywhere'        => 'Doctrine\DBAL\Driver\SQLAnywhere\Driver',
          'sqlsrv'             => 'Doctrine\DBAL\Driver\SQLSrv\Driver',
+         'ase'                => 'Doctrine\DBAL\Driver\ASE\Driver',
     );
 
     /**
@@ -87,10 +89,11 @@ final class DriverManager
      *     pdo_pgsql
      *     pdo_oci (unstable)
      *     pdo_sqlsrv
-     *     pdo_sqlsrv
+     *     pdo_ase
      *     mysqli
      *     sqlanywhere
      *     sqlsrv
+     *     ase
      *     ibm_db2 (unstable)
      *     drizzle_pdo_mysql
      *

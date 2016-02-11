@@ -47,6 +47,11 @@ class ReservedWordsCommand extends Command
         'sqlanywhere11' => 'Doctrine\DBAL\Platforms\Keywords\SQLAnywhere11Keywords',
         'sqlanywhere12' => 'Doctrine\DBAL\Platforms\Keywords\SQLAnywhere12Keywords',
         'sqlanywhere16' => 'Doctrine\DBAL\Platforms\Keywords\SQLAnywhere16Keywords',
+        'ase'           => 'Doctrine\DBAL\Platforms\Keywords\ASEKeywords',
+        'ase150'        => 'Doctrine\DBAL\Platforms\Keywords\ASE150Keywords',
+        'ase155'        => 'Doctrine\DBAL\Platforms\Keywords\ASE155Keywords',
+        'ase157'        => 'Doctrine\DBAL\Platforms\Keywords\ASE157Keywords',
+        'ase160'        => 'Doctrine\DBAL\Platforms\Keywords\ASE160Keywords'
     );
 
     /**
@@ -79,8 +84,8 @@ class ReservedWordsCommand extends Command
 Checks if the current database contains tables and columns
 with names that are identifiers in this dialect or in other SQL dialects.
 
-By default SQLite, MySQL, PostgreSQL, Microsoft SQL Server, Oracle
-and SQL Anywhere keywords are checked:
+By default SQLite, MySQL, PostgreSQL, Microsoft SQL Server, Oracle,
+SQL Anywhere and Adaptive Server Enterprise keywords are checked:
 
     <info>%command.full_name%</info>
 
@@ -101,10 +106,16 @@ The following keyword lists are currently shipped with Doctrine:
     * sqlserver2005
     * sqlserver2008
     * sqlserver2012
+    * ase
     * sqlanywhere
     * sqlanywhere11
     * sqlanywhere12
     * sqlanywhere16
+    * ase
+    * ase150
+    * ase155
+    * ase157
+    * ase160
     * db2 (Not checked by default)
 EOT
         );
@@ -135,6 +146,11 @@ EOT
                 'sqlanywhere11',
                 'sqlanywhere12',
                 'sqlanywhere16',
+                'ase',
+                'ase150',
+                'ase155',
+                'ase157',
+                'ase160'
             );
         }
 
