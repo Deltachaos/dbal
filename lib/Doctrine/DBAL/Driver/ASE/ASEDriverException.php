@@ -20,6 +20,7 @@
 namespace Doctrine\DBAL\Driver\ASE;
 
 use Doctrine\DBAL\Driver\Connection;
+use Doctrine\DBAL\Driver\DriverException;
 use Doctrine\DBAL\Driver\ServerInfoAwareConnection;
 
 /**
@@ -28,7 +29,7 @@ use Doctrine\DBAL\Driver\ServerInfoAwareConnection;
  * @since 2.6
  * @author Maximilian Ruta <mr@xtain.net>
  */
-class ASEMessageException extends ASEException
+class ASEDriverException extends ASEException implements DriverException
 {
     /**
      * @var
@@ -46,7 +47,7 @@ class ASEMessageException extends ASEException
     protected $line;
 
     /**
-     * ASEMessageException constructor.
+     * ASEDriverException constructor.
      * @param string $id
      * @param int $code
      * @param \Exception $previous
@@ -75,5 +76,30 @@ class ASEMessageException extends ASEException
             'line' => $this->line,
             'state' => $this->state
         );
+    }
+
+    /**
+     * Returns the driver specific error code if available.
+     *
+     * Returns null if no driver specific error code is available
+     * for the error raised by the driver.
+     *
+     * @return integer|string|null
+     */
+    public function getErrorCode()
+    {
+        return $this->code;
+    }
+
+    /**
+     * Returns the SQLSTATE the driver was in at the time the error occurred.
+     *
+     * Returns null if the driver does not provide a SQLSTATE for the error occurred.
+     *
+     * @return string|null
+     */
+    public function getSQLState()
+    {
+        return $this->state;
     }
 }

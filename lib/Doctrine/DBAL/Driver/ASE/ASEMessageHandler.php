@@ -36,14 +36,19 @@ class ASEMessageHandler
     protected static $registred = false;
 
     /**
-     * @var ASEMessageException[]
+     * @var ASEDriverException[]
      */
     protected static $globalMessages = [];
 
     /**
-     * @var ASEMessageException[]
+     * @var ASEDriverException[]
      */
     protected $messages = [];
+
+    /**
+     * @var \Closure[]
+     */
+    protected $logger = [];
 
     public static function registerLogger()
     {
@@ -53,13 +58,13 @@ class ASEMessageHandler
 
         self::$registred = true;
         sybase_set_message_handler(function($id, $severity, $state, $line, $text) {
-            self::$globalMessages[] = new ASEMessageException($text, $severity, null, $state, $line, $id);
+            self::$globalMessages[] = new ASEDriverException($text, $severity, null, $state, $line, $id);
         });
     }
 
     /**
      * @param \Throwable $e
-     * @return ASEMessageException
+     * @return ASEDriverException
      */
     public static function fromThrowable($e)
     {
@@ -70,7 +75,7 @@ class ASEMessageHandler
             $message = $matches[4];
         }
 
-        return new ASEMessageException($message);
+        return new ASEDriverException($message);
     }
 
     /**
@@ -83,24 +88,45 @@ class ASEMessageHandler
             $self = $this;
 
             sybase_set_message_handler(function($id, $severity, $state, $line, $text) use ($self) {
-                $self->messages[] = new ASEMessageException($text, $severity, null, $state, $line, $id);
+                $self->messages[] = new ASEDriverException($text, $severity, null, $state, $line, $id);
+                foreach ($this->logger as $logger) {
+                    $logger($id, $severity, $state, $line, $text);
+                }
             }, $resource);
         }
     }
 
     /**
-     * @return ASEMessageException|null
+     * @param \Closure $logger
+     */
+    public function addLogger(\Closure $logger)
+    {
+        $this->logger[] = $logger;
+    }
+
+    /**
+     * @param \Closure $logger
+     */
+    public function removeLogger(\Closure $logger)
+    {
+        if(($key = array_search($logger, $this->logger, true)) !== FALSE) {
+            unset($this->logger[$key]);
+        }
+    }
+
+    /**
+     * @return ASEDriverException|null
      */
     public function getLastMessage($level = 10)
     {
-        /** @var ASEMessageException $message */
+        /** @var ASEDriverException $message */
         foreach (array_reverse($this->messages) as $message) {
             if ($message->getCode() >= $level) {
                 return $message;
             }
         }
 
-        /** @var ASEMessageException $message */
+        /** @var ASEDriverException $message */
         foreach (array_reverse(self::$globalMessages) as $message) {
             if ($message->getCode() >= $level) {
                 return $message;
@@ -122,21 +148,21 @@ class ASEMessageHandler
     }
 
     /**
-     * @return ASEMessageException|null
+     * @return ASEDriverException|null
      */
     public function getLastException()
     {
         $message = $this->getLastMessage();
 
         if ($message === null) {
-            $message = new ASEMessageException("ASE error occurred but no error message was retrieved from driver.");
+            $message = new ASEException("ASE error occurred but no error message was retrieved from driver.");
         }
 
         return $message;
     }
 
     /**
-     * @return ASEMessageException|null
+     * @return ASEDriverException|null
      */
     public function getLastError()
     {

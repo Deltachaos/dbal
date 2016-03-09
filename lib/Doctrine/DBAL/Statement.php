@@ -136,7 +136,7 @@ class Statement implements \IteratorAggregate, DriverStatement
      *
      * @return boolean TRUE on success, FALSE on failure.
      */
-    public function bindParam($name, &$var, $type = PDO::PARAM_STR, $length = null)
+    public function bindParam($name, &$var, $type = null, $length = null)
     {
         return $this->stmt->bindParam($name, $var, $type, $length);
     }

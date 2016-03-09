@@ -49,8 +49,7 @@ class DateTimeType extends Type
      */
     public function convertToDatabaseValue($value, AbstractPlatform $platform)
     {
-        return ($value !== null)
-            ? $value->format($platform->getDateTimeFormatString()) : null;
+        return $platform->convertDateTimeToDatabaseValue($value);
     }
 
     /**
@@ -58,20 +57,6 @@ class DateTimeType extends Type
      */
     public function convertToPHPValue($value, AbstractPlatform $platform)
     {
-        if ($value === null || $value instanceof \DateTime) {
-            return $value;
-        }
-
-        $val = \DateTime::createFromFormat($platform->getDateTimeFormatString(), $value);
-
-        if ( ! $val) {
-            $val = date_create($value);
-        }
-
-        if ( ! $val) {
-            throw ConversionException::conversionFailedFormat($value, $this->getName(), $platform->getDateTimeFormatString());
-        }
-
-        return $val;
+        return $platform->convertFromDateTime($value);
     }
 }

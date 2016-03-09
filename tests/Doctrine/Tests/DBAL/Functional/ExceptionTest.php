@@ -332,6 +332,10 @@ class ExceptionTest extends \Doctrine\Tests\DbalFunctionalTestCase
             $this->markTestSkipped("Drizzle does not always support authentication");
         }
 
+        if ($this->_conn->getDriver()->getName() == 'ase' && isset($params['host'])) {
+            $this->markTestSkipped("sybase_ct not cares about the host");
+        }
+
         if ($this->_conn->getDatabasePlatform()->getName() == 'postgresql' && isset($params['password'])) {
             $this->markTestSkipped("Does not work on Travis");
         }

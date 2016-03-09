@@ -19,8 +19,10 @@
 
 namespace Doctrine\DBAL\Driver\ASE;
 
+use Doctrine\DBAL\DBALException;
 use Doctrine\DBAL\Driver\Connection;
 use Doctrine\DBAL\Driver\ServerInfoAwareConnection;
+use Doctrine\DBAL\Platforms\ASEPlatform;
 
 /**
  * ASE Connection implementation.
@@ -30,6 +32,11 @@ use Doctrine\DBAL\Driver\ServerInfoAwareConnection;
  */
 class ASEConnection implements Connection, ServerInfoAwareConnection
 {
+    /**
+     * @const string
+     */
+    const MASTER_DB = 'master';
+
     /**
      * @var resource
      */
@@ -51,13 +58,25 @@ class ASEConnection implements Connection, ServerInfoAwareConnection
     protected $lastInsertId;
 
     /**
+     * @var string
+     */
+    protected $database;
+
+    /**
+     * @var Driver
+     */
+    protected $driver;
+
+    /**
+     * @param Driver $driver
      * @param string $server
      * @param array  $driverOptions
      *
      * @throws \Doctrine\DBAL\Driver\ASE\ASEException
      */
-    public function __construct($server, $driverOptions)
+    public function __construct(Driver $driver, $server, $driverOptions)
     {
+        $this->driver = $driver;
         $this->appname = md5(uniqid());
 
         $username = null;
@@ -76,9 +95,11 @@ class ASEConnection implements Connection, ServerInfoAwareConnection
             $charset = $driverOptions['charset'];
         }
 
-        if (isset($driverOptions['dbname'])) {
-            $database = $driverOptions['dbname'];
+        if (!isset($driverOptions['dbname'])) {
+            $driverOptions['dbname'] = self::MASTER_DB;
         }
+
+        $this->database = $database = $driverOptions['dbname'];
 
         ASEMessageHandler::registerLogger();
         ASEMessageHandler::clearGlobal();
@@ -86,14 +107,14 @@ class ASEConnection implements Connection, ServerInfoAwareConnection
         try {
             $this->connectionResource = sybase_connect($server, $username, $password, $charset, $this->appname, true);
         } catch (\Throwable $e) {
-            throw ASEMessageHandler::fromThrowable($e);
+            throw DBALException::driverException($this->driver, ASEMessageHandler::fromThrowable($e));
         } catch (\Exception $e) {
-            throw ASEMessageHandler::fromThrowable($e);
+            throw DBALException::driverException($this->driver, ASEMessageHandler::fromThrowable($e));
         }
         $this->messageHandler = new ASEMessageHandler($this->connectionResource);
 
         if (!$this->connectionResource) {
-            throw $this->messageHandler->getLastException();
+            throw DBALException::driverException($this->driver, $this->messageHandler->getLastException());
         }
 
         if (isset($database)) {
@@ -101,8 +122,8 @@ class ASEConnection implements Connection, ServerInfoAwareConnection
             sybase_select_db($database, $this->connectionResource);
 
             if ($this->messageHandler->hasError()) {
-                throw $this->messageHandler->getLastException();
-            }
+                throw DBALException::driverException($this->driver, $this->messageHandler->getLastException());
+           }
         }
 
         $this->lastInsertId = new LastInsertId();
@@ -151,17 +172,9 @@ class ASEConnection implements Connection, ServerInfoAwareConnection
      * {@inheritDoc}
      * @license New BSD, code from Zend Framework
      */
-    public function quote($value, $type=\PDO::PARAM_STR)
+    public function quote($value, $type=null)
     {
-        if (is_null($value)) {
-            return 'NULL';
-        } elseif (is_int($value)) {
-            return $value;
-        } elseif (is_float($value)) {
-            return sprintf('%F', $value);
-        }
-
-        return "'" . str_replace("'", "''", $value) . "'";
+        return ASEPlatform::quote($value, $type);
     }
 
     /**
@@ -192,7 +205,7 @@ class ASEConnection implements Connection, ServerInfoAwareConnection
         $this->messageHandler->clear();
         $this->exec('BEGIN TRANSACTION');
         if ($this->messageHandler->hasError()) {
-            throw $this->messageHandler->getLastError();
+            throw DBALException::driverException($this->driver, $this->messageHandler->getLastError());
         }
     }
 
@@ -204,7 +217,7 @@ class ASEConnection implements Connection, ServerInfoAwareConnection
         $this->messageHandler->clear();
         $this->exec('COMMIT TRANSACTION');
         if ($this->messageHandler->hasError()) {
-            throw $this->messageHandler->getLastError();
+            throw DBALException::driverException($this->driver, $this->messageHandler->getLastError());
         }
     }
 
@@ -216,7 +229,7 @@ class ASEConnection implements Connection, ServerInfoAwareConnection
         $this->messageHandler->clear();
         $this->exec('ROLLBACK TRANSACTION');
         if ($this->messageHandler->hasError()) {
-            throw $this->messageHandler->getLastError();
+            throw DBALException::driverException($this->driver, $this->messageHandler->getLastError());
         }
     }
 
@@ -246,5 +259,25 @@ class ASEConnection implements Connection, ServerInfoAwareConnection
         }
 
         return false;
+    }
+
+    public function close()
+    {
+        if ($this->connectionResource) {
+            // sometimes sybase_close not closes the connection directly.
+            // To not have the current database in use anymore, we free it by
+            // switching to the master database
+            sybase_select_db(self::MASTER_DB, $this->connectionResource);
+
+            // because the connection is maybe still alive (because of a bug in sybase_ct)
+            // we pick the wooden mallet
+            @sybase_query('SELECT syb_quit()', $this->connectionResource);
+            @sybase_close($this->connectionResource);
+        }
+    }
+
+    public function __destruct()
+    {
+        $this->close();
     }
 }

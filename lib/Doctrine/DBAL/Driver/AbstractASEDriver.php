@@ -28,6 +28,8 @@ use Doctrine\DBAL\Platforms\ASE157Platform;
 use Doctrine\DBAL\Platforms\ASE160Platform;
 use Doctrine\DBAL\Schema\ASESchemaManager;
 use Doctrine\DBAL\VersionAwarePlatformDriver;
+use Doctrine\DBAL\Driver\DriverException;
+use Doctrine\DBAL\Exception;
 
 /**
  * Abstract base implementation of the {@link Doctrine\DBAL\Driver} interface for ASE based drivers.
@@ -36,8 +38,19 @@ use Doctrine\DBAL\VersionAwarePlatformDriver;
  * @link   www.doctrine-project.org
  * @since  2.6
  */
-abstract class AbstractASEDriver implements Driver, VersionAwarePlatformDriver
+abstract class AbstractASEDriver implements Driver, ExceptionConverterDriver, VersionAwarePlatformDriver
 {
+    /**
+     * @var array
+     */
+    protected $platformOptions = array();
+
+    protected function initializeConnection(Connection $connection)
+    {
+        // you have to enable quoted_identifier in sybase to use them
+        $connection->exec("SET quoted_identifier ON");
+    }
+
     /**
      * {@inheritdoc}
      */
@@ -70,15 +83,15 @@ abstract class AbstractASEDriver implements Driver, VersionAwarePlatformDriver
 
         switch(true) {
             case version_compare($version, '16.0.0.0', '>='):
-                return new ASE160Platform();
+                return new ASE160Platform($this->platformOptions);
             case version_compare($version, '15.7.0.0', '>='):
-                return new ASE157Platform();
+                return new ASE157Platform($this->platformOptions);
             case version_compare($version, '15.5.0.0', '>='):
-                return new ASE155Platform();
+                return new ASE155Platform($this->platformOptions);
             case version_compare($version, '15.0.0.0', '>='):
-                return new ASE150Platform();
+                return new ASE150Platform($this->platformOptions);
             default:
-                return new ASEPlatform();
+                return new ASEPlatform($this->platformOptions);
         }
     }
 
@@ -101,7 +114,7 @@ abstract class AbstractASEDriver implements Driver, VersionAwarePlatformDriver
      */
     public function getDatabasePlatform()
     {
-        return new ASE150Platform();
+        return new ASE150Platform($this->platformOptions);
     }
 
     /**
@@ -111,5 +124,36 @@ abstract class AbstractASEDriver implements Driver, VersionAwarePlatformDriver
     public function getSchemaManager(\Doctrine\DBAL\Connection $conn)
     {
         return new ASESchemaManager($conn);
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function convertException($message, DriverException $exception)
+    {
+        switch (true) {
+            case stripos($exception->getMessage(), 'Attempt to insert duplicate key row in object') === 0:
+                return new Exception\UniqueConstraintViolationException($message, $exception);
+            case preg_match('/^.*not found. Specify owner\.objectname/', $exception->getMessage()):
+                return new Exception\TableNotFoundException($message, $exception);
+            case preg_match('/^There is already an object named /', $exception->getMessage()):
+                return new Exception\TableExistsException($message, $exception);
+            case preg_match('/^Foreign key constraint violation occurred/i', $exception->getMessage()):
+            case preg_match('/^Dependent foreign key constraint violation in a referential integrity constraint/i', $exception->getMessage()):
+            case preg_match('/there are referential constraints defined/i', $exception->getMessage()):
+                return new Exception\ForeignKeyConstraintViolationException($message, $exception);
+            case preg_match('/^The column value in table .* does not allow null values/i', $exception->getMessage()):
+                return new Exception\NotNullConstraintViolationException($message, $exception);
+            case preg_match('/^Invalid column name/i', $exception->getMessage()):
+                return new Exception\InvalidFieldNameException($message, $exception);
+            case preg_match('/^Ambiguous column name/i', $exception->getMessage()):
+                return new Exception\NonUniqueFieldNameException($message, $exception);
+            case preg_match('/^Incorrect syntax near/i', $exception->getMessage()):
+                return new Exception\SyntaxErrorException($message, $exception);
+            case preg_match('/^Sybase:[\s]+Unable to connect/i', $exception->getMessage()):
+                return new Exception\ConnectionException($message, $exception);
+        }
+
+        return new Exception\DriverException($message, $exception);
     }
 }

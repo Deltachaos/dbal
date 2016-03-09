@@ -33,12 +33,16 @@ class Driver extends AbstractASEDriver
      */
     public function connect(array $params, $username = null, $password = null, array $driverOptions = array())
     {
-        return new Connection(
+        $connection = new Connection(
             $this->_constructPdoDsn($params),
             $username,
             $password,
             $driverOptions
         );
+
+        $this->initializeConnection($connection);
+
+        return $connection;
     }
 
     /**

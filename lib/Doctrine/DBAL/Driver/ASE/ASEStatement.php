@@ -19,6 +19,8 @@
 
 namespace Doctrine\DBAL\Driver\ASE;
 
+use Doctrine\DBAL\DBALException;
+use Doctrine\DBAL\Types\Type;
 use PDO;
 use IteratorAggregate;
 use Doctrine\DBAL\Driver\Statement;
@@ -107,6 +109,11 @@ class ASEStatement implements IteratorAggregate, Statement
     private $messageHandler;
 
     /**
+     * @var array
+     */
+    private $messages;
+
+    /**
      * Append to any INSERT query to retrieve the last insert id.
      *
      * @var string
@@ -146,11 +153,11 @@ class ASEStatement implements IteratorAggregate, Statement
      */
     public function bindParam($column, &$variable, $type = null, $length = null)
     {
-        if ($type === \PDO::PARAM_LOB) {
-            throw new ASEException("ASE does not support Large Objects as parameters for queries.");
+        if ($type === \PDO::PARAM_LOB && is_resource($variable)) {
+            $this->params[$column] = array(stream_get_contents($variable), $type);
+        } else {
+            $this->params[$column] = array($variable, $type);
         }
-
-        $this->params[$column] = array($variable, $type);
     }
 
     /**
@@ -202,7 +209,7 @@ class ASEStatement implements IteratorAggregate, Statement
     /**
      * @param string $sql
      * @param array $params
-     * @return mixed
+     * @return string
      */
     protected function interpolateQuery($sql, $params)
     {
@@ -265,12 +272,23 @@ class ASEStatement implements IteratorAggregate, Statement
         $prepared = $this->interpolateQuery($this->sql, $this->params);
 
         $this->messageHandler->clear();
-        $this->stmt = sybase_unbuffered_query($prepared, $this->connectionResource);
+
+        $messages = [];
+        $logMessages = function($id, $severity, $state, $line, $text) use (&$messages) {
+            $messages[] = $text;
+        };
+
+        $this->messageHandler->addLogger($logMessages);
+        $this->stmt = sybase_query($prepared, $this->connectionResource);
+        $this->messageHandler->removeLogger($logMessages);
+        $this->messages = $messages;
+
+        if ($this->messageHandler->hasError()) {
+            throw $this->messageHandler->getLastError();
+        }
         $this->stmtAffectedRows = sybase_affected_rows();
         if (!$this->stmt) {
-            if ($this->messageHandler->hasError()) {
-                throw $this->messageHandler->getLastError();
-            }
+            throw $this->messageHandler->getLastException();
         }
 
         if ($this->lastInsertId) {
@@ -309,6 +327,10 @@ class ASEStatement implements IteratorAggregate, Statement
      */
     public function fetch($fetchMode = null)
     {
+        if (is_bool($this->stmt)) {
+            return false;
+        }
+
         $args      = func_get_args();
         $fetchMode = $fetchMode ?: $this->defaultFetchMode;
 
@@ -329,14 +351,42 @@ class ASEStatement implements IteratorAggregate, Statement
                     $ctorArgs  = (isset($args[2])) ? $args[2] : array();
                 }
 
-                $object = $className;
+                // We have to emulate this because sybase_fetch_object($this->stmt, $object) throws a segmentation fault
+                $reflection = new \ReflectionClass($className);
 
-                if (count($ctorArgs) >= 0) {
-                    $reflection = new \ReflectionClass($className);
+                if (count($ctorArgs) > 0) {
                     $object = $reflection->newInstanceArgs($ctorArgs);
+                } else {
+                    // if a new instance is created by fetch_object function,
+                    // it injects properties before calling the the constructor
+                    $object = $reflection->newInstanceWithoutConstructor();
                 }
 
-                return sybase_fetch_object($this->stmt, $object) ?: false;
+                $data = sybase_fetch_assoc($this->stmt) ?: false;
+
+                if ($data === false) {
+                    return $data;
+                }
+
+                foreach ($data as $name => $value) {
+                    if ($reflection->hasProperty($name)) {
+                        $prop = $reflection->getProperty($name);
+                        if (!$prop->isPublic()) {
+                            $prop->setAccessible(true);
+                            $prop->setValue($object, $value);
+                            $prop->setAccessible(false);
+                            continue;
+                        }
+                    }
+
+                    $object->{$name} = $value;
+                }
+
+                if (count($ctorArgs) > 0 && $const = $reflection->getConstructor()) {
+                    call_user_func_array(array($object, $const->getName()), $ctorArgs);
+                }
+
+                return $object;
         }
 
         throw new ASEException("Fetch mode is not supported!");
@@ -389,5 +439,15 @@ class ASEStatement implements IteratorAggregate, Statement
     public function rowCount()
     {
         return $this->stmtAffectedRows;
+    }
+
+    public function getMessages()
+    {
+        return $this->messages;
+    }
+
+    public function __toString()
+    {
+        return $this->interpolateQuery($this->sql, $this->params);
     }
 }

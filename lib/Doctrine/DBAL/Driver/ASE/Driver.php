@@ -34,12 +34,14 @@ class Driver extends AbstractASEDriver
      */
     public function connect(array $params, $username = null, $password = null, array $driverOptions = array())
     {
+        /*
         if (!isset($params['server']) || isset($params['port']) || isset($params['host'])) {
             throw new ASEException(
                 "Host and port are not supported by the sybase_ct extension. You need to give a servername. " .
                 "The hostname and port then will be read from \$SYBASE/interfaces."
             );
         }
+        */
 
         $server = $params['server'];
 
@@ -55,7 +57,16 @@ class Driver extends AbstractASEDriver
             $driverOptions['password'] = $password;
         }
 
-        return new ASEConnection($server, $driverOptions);
+        if (isset($params['platform_options'])) {
+            $driverOptions['platform_options'] = $params['platform_options'];
+            $this->platformOptions = $driverOptions['platform_options'];
+        }
+
+        $connection = new ASEConnection($this, $server, $driverOptions);
+
+        $this->initializeConnection($connection);
+
+        return $connection;
     }
 
     /**

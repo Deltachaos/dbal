@@ -67,8 +67,7 @@ class DateTimeTzType extends Type
      */
     public function convertToDatabaseValue($value, AbstractPlatform $platform)
     {
-        return ($value !== null)
-            ? $value->format($platform->getDateTimeTzFormatString()) : null;
+        return $platform->convertDateTimeTzToDatabaseValue($value);
     }
 
     /**
@@ -76,15 +75,7 @@ class DateTimeTzType extends Type
      */
     public function convertToPHPValue($value, AbstractPlatform $platform)
     {
-        if ($value === null || $value instanceof \DateTime) {
-            return $value;
-        }
+        return $platform->convertFromDateTimeTz($value);
 
-        $val = \DateTime::createFromFormat($platform->getDateTimeTzFormatString(), $value);
-        if ( ! $val) {
-            throw ConversionException::conversionFailedFormat($value, $this->getName(), $platform->getDateTimeTzFormatString());
-        }
-
-        return $val;
     }
 }

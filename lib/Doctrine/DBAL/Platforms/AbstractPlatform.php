@@ -31,6 +31,7 @@ use Doctrine\DBAL\Schema\ForeignKeyConstraint;
 use Doctrine\DBAL\Schema\TableDiff;
 use Doctrine\DBAL\Schema\Column;
 use Doctrine\DBAL\Schema\ColumnDiff;
+use Doctrine\DBAL\Types\ConversionException;
 use Doctrine\DBAL\Types\Type;
 use Doctrine\DBAL\Events;
 use Doctrine\Common\EventManager;
@@ -2634,6 +2635,163 @@ abstract class AbstractPlatform
     public function convertBooleansToDatabaseValue($item)
     {
         return $this->convertBooleans($item);
+    }
+
+    /**
+     * Some platforms have time strings that needs to be correctly converted
+     *
+     * The default conversion tries to convert value into string with the defined time format
+     *
+     * @param \DateTime $value
+     *
+     * @return string|null
+     */
+    public function convertTimeToDatabaseValue(\DateTime $value = null)
+    {
+        return ($value !== null)
+            ? $value->format($this->getTimeFormatString()) : null;
+    }
+
+    /**
+     * Some platforms have time strings that needs to be correctly converted
+     *
+     * The default conversion tries to convert value into \DateTime with the defined time format
+     *
+     * @param mixed $value
+     *
+     * @return \DateTime|null
+     */
+    public function convertFromTime($value)
+    {
+        if ($value === null || $value instanceof \DateTime) {
+            return $value;
+        }
+
+        $val = \DateTime::createFromFormat('!' . $this->getTimeFormatString(), $value);
+        if ( ! $val) {
+            throw ConversionException::conversionFailedFormat($value, $this->getName(), $this->getTimeFormatString());
+        }
+
+        return $val;
+    }
+
+    /**
+     * Some platforms have date strings that needs to be correctly converted
+     *
+     * The default conversion tries to convert value into string with the defined time format
+     *
+     * @param \DateTime $value
+     *
+     * @return string|null
+     */
+    public function convertDateToDatabaseValue(\DateTime $value = null)
+    {
+        return ($value !== null)
+            ? $value->format($this->getDateFormatString()) : null;
+    }
+
+    /**
+     * Some platforms have date strings that needs to be correctly converted
+     *
+     * The default conversion tries to convert value into \DateTime with the defined time format
+     *
+     * @param mixed $value
+     *
+     * @return \DateTime|null
+     */
+    public function convertFromDate($value)
+    {
+        if ($value === null || $value instanceof \DateTime) {
+            return $value;
+        }
+
+        $val = \DateTime::createFromFormat('!'.$this->getDateFormatString(), $value);
+        if ( ! $val) {
+            throw ConversionException::conversionFailedFormat($value, $this->getName(), $this->getDateFormatString());
+        }
+
+        return $val;
+    }
+
+    /**
+     * Some platforms have datetime strings that needs to be correctly converted
+     *
+     * The default conversion tries to convert value into string with the defined time format
+     *
+     * @param \DateTime $value
+     *
+     * @return string|null
+     */
+    public function convertDateTimeToDatabaseValue(\DateTime $value = null)
+    {
+        return ($value !== null)
+            ? $value->format($this->getDateTimeFormatString()) : null;
+    }
+
+    /**
+     * Some platforms have datetime strings that needs to be correctly converted
+     *
+     * The default conversion tries to convert value into \DateTime with the defined time format
+     *
+     * @param mixed $value
+     *
+     * @return \DateTime|null
+     */
+    public function convertFromDateTime($value)
+    {
+        if ($value === null || $value instanceof \DateTime) {
+            return $value;
+        }
+
+        $val = \DateTime::createFromFormat($this->getDateTimeFormatString(), $value);
+
+        if ( ! $val) {
+            $val = date_create($value);
+        }
+
+        if ( ! $val) {
+            throw ConversionException::conversionFailedFormat($value, $this->getName(), $this->getDateTimeFormatString());
+        }
+
+        return $val;
+    }
+
+    /**
+     * Some platforms have datetimetz strings that needs to be correctly converted
+     *
+     * The default conversion tries to convert value into string with the defined time format
+     *
+     * @param \DateTime $value
+     *
+     * @return string|null
+     */
+    public function convertDateTimeTzToDatabaseValue(\DateTime $value = null)
+    {
+        return ($value !== null)
+            ? $value->format($this->getDateTimeTzFormatString()) : null;
+    }
+
+    /**
+     * Some platforms have datetimetz strings that needs to be correctly converted
+     *
+     * The default conversion tries to convert value into \DateTime with the defined time format
+     *
+     * @param mixed $value
+     *
+     * @return \DateTime|null
+     */
+    public function convertFromDateTimeTz($value)
+    {
+        if ($value === null || $value instanceof \DateTime) {
+            return $value;
+        }
+
+        $val = \DateTime::createFromFormat($this->getDateTimeTzFormatString(), $value);
+        if ( ! $val) {
+            throw ConversionException::conversionFailedFormat($value, $this->getName(), $this->getDateTimeTzFormatString());
+        }
+
+        return $val;
     }
 
     /**

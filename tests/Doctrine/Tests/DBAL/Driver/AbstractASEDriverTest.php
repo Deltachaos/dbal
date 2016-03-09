@@ -3,6 +3,7 @@
 namespace Doctrine\Tests\DBAL\Driver;
 
 use Doctrine\DBAL\Connection;
+use Doctrine\DBAL\Driver\ASE\ASEDriverException;
 use Doctrine\DBAL\Platforms\ASE150Platform;
 use Doctrine\DBAL\Schema\ASESchemaManager;
 
@@ -21,6 +22,42 @@ class AbstractASEDriverTest extends AbstractDriverTest
     protected function createSchemaManager(Connection $connection)
     {
         return new ASESchemaManager($connection);
+    }
+
+    protected function getExceptionConversionData()
+    {
+        return array(
+            self::EXCEPTION_UNIQUE_CONSTRAINT_VIOLATION => array(
+                array(16, null, "Attempt to insert duplicate key row in object 'duplicatekey_table' with unique index 'duplicatek_5760020521'")
+            ),
+            self::EXCEPTION_TABLE_NOT_FOUND => array(
+                array(16, null, "unknown_table not found. Specify owner.objectname or use sp_help to check whether the object exists (sp_help may produce lots of output).")
+            ),
+            self::EXCEPTION_TABLE_EXISTS => array(
+                array(16, null, "There is already an object named 'alreadyexist_table' in the database.")
+            ),
+            self::EXCEPTION_FOREIGN_KEY_CONSTRAINT_VIOLATION => array(
+                array(16, null, "Foreign key constraint violation occurred, dbname =  'test', table name = 'owning_table', constraint name = 'FK_8F4773C1E3087FFC'."),
+                array(16, null, "Dependent foreign key constraint violation in a referential integrity constraint. dbname =  'test', table name = 'constraint_error_table', constraint name = 'FK_8F4773C1E3087FFC'."),
+                array(16, null, "Dependent foreign key constraint violation in a referential integrity constraint. dbname =  'test', table name = 'constraint_error_table', constraint name = 'FK_8F4773C1E3087FFC'."),
+                array(16, null, "Could not truncate table 'constraint_error_table' because there are referential constraints defined on it and there are data rows in some of the referencing tables.")
+            ),
+            self::EXCEPTION_NOT_NULL_CONSTRAINT_VIOLATION => array(
+                array(16, null, "The column value in table notnull_table does not allow null values.")
+            ),
+            self::EXCEPTION_INVALID_FIELD_NAME => array(
+                array(16, null, "Invalid column name 'name'.")
+            ),
+            self::EXCEPTION_NON_UNIQUE_FIELD_NAME => array(
+                array(16, null, "Ambiguous column name id")
+            ),
+            self::EXCEPTION_SYNTAX_ERROR => array(
+                array(16, null, "Incorrect syntax near 'syntax_error_table'.")
+            ),
+            self::EXCEPTION_CONNECTION => array(
+                array(16, null, "Sybase:  Unable to connect ")
+            )
+        );
     }
 
     protected function getDatabasePlatformsForVersions()

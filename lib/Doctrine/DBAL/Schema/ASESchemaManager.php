@@ -34,6 +34,14 @@ class ASESchemaManager extends AbstractSchemaManager
     /**
      * {@inheritdoc}
      */
+    protected function _getPortableSequenceDefinition($sequence)
+    {
+        return new Sequence($sequence['name'], $sequence['increment'], $sequence['start_value']);
+    }
+
+    /**
+     * {@inheritdoc}
+     */
     protected function _getPortableTableColumnDefinition($tableColumn)
     {
         $dbType = strtok($tableColumn['type'], '(), ');
@@ -95,5 +103,167 @@ class ASESchemaManager extends AbstractSchemaManager
         }
 
         return $column;
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    protected function _getPortableTableForeignKeysList($tableForeignKeys)
+    {
+        $foreignKeys = array();
+
+        foreach ($tableForeignKeys as $tableForeignKey) {
+            if ( ! isset($foreignKeys[$tableForeignKey['ForeignKey']])) {
+                $foreignKeys[$tableForeignKey['ForeignKey']] = array(
+                    'local_columns' => array($tableForeignKey['ColumnName']),
+                    'foreign_table' => $tableForeignKey['ReferenceTableName'],
+                    'foreign_columns' => array($tableForeignKey['ReferenceColumnName']),
+                    'name' => $tableForeignKey['ForeignKey'],
+                    'options' => array(
+                        'onUpdate' => str_replace('_', ' ', $tableForeignKey['update_referential_action_desc']),
+                        'onDelete' => str_replace('_', ' ', $tableForeignKey['delete_referential_action_desc'])
+                    )
+                );
+            } else {
+                $foreignKeys[$tableForeignKey['ForeignKey']]['local_columns'][] = $tableForeignKey['ColumnName'];
+                $foreignKeys[$tableForeignKey['ForeignKey']]['foreign_columns'][] = $tableForeignKey['ReferenceColumnName'];
+            }
+        }
+
+        return parent::_getPortableTableForeignKeysList($foreignKeys);
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    protected function _getPortableTableIndexesList($tableIndexRows, $tableName=null)
+    {
+        foreach ($tableIndexRows as &$tableIndex) {
+            $tableIndex['non_unique'] = (boolean) $tableIndex['non_unique'];
+            $tableIndex['primary'] = (boolean) $tableIndex['primary'];
+            $tableIndex['flags'] = $tableIndex['flags'] ? array($tableIndex['flags']) : null;
+        }
+
+        return parent::_getPortableTableIndexesList($tableIndexRows, $tableName);
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    protected function _getPortableTableForeignKeyDefinition($tableForeignKey)
+    {
+        return new ForeignKeyConstraint(
+            $tableForeignKey['local_columns'],
+            $tableForeignKey['foreign_table'],
+            $tableForeignKey['foreign_columns'],
+            $tableForeignKey['name'],
+            $tableForeignKey['options']
+        );
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    protected function _getPortableTableDefinition($table)
+    {
+        return $table['name'];
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    protected function _getPortableDatabaseDefinition($database)
+    {
+        return $database['name'];
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    protected function getPortableNamespaceDefinition(array $namespace)
+    {
+        return $namespace['name'];
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    protected function _getPortableViewDefinition($view)
+    {
+        // @todo
+        return new View($view['name'], null);
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function listTableIndexes($table)
+    {
+        $sql = $this->_platform->getListTableIndexesSQL($table, $this->_conn->getDatabase());
+
+        try {
+            $tableIndexes = $this->_conn->fetchAll($sql);
+        } catch (\PDOException $e) {
+            if ($e->getCode() == "IMSSP") {
+                return array();
+            } else {
+                throw $e;
+            }
+        } catch (ASEException $e) {
+            if (strpos($e->getMessage(), 'SQLSTATE [01000, 15472]') === 0) {
+                return array();
+            } else {
+                throw $e;
+            }
+        }
+
+        return $this->_getPortableTableIndexesList($tableIndexes, $table);
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function alterTable(TableDiff $tableDiff)
+    {
+        if (count($tableDiff->removedColumns) > 0) {
+            foreach ($tableDiff->removedColumns as $col) {
+                $columnConstraintSql = $this->getColumnConstraintSQL($tableDiff->name, $col->getName());
+                foreach ($this->_conn->fetchAll($columnConstraintSql) as $constraint) {
+                    $this->_conn->exec("ALTER TABLE $tableDiff->name DROP CONSTRAINT " . $constraint['Name']);
+                }
+            }
+        }
+
+        parent::alterTable($tableDiff);
+    }
+
+    /**
+     * Returns the SQL to retrieve the constraints for a given column.
+     *
+     * @param string $table
+     * @param string $column
+     *
+     * @return string
+     */
+    private function getColumnConstraintSQL($table, $column)
+    {
+        $refWhere = "";
+
+        // ASE can reference 1-8 columns in a constraint
+        for ($i = 1; $i <= 8; $i++) {
+            $refWhere .= "(
+                SELECT substring(name,1,30)
+                FROM syscolumns
+                WHERE id=ref.reftabid AND colid=ref.refkey" . $i . "
+            ) = " . $this->_conn->quote($column) . " OR ";
+        }
+
+        $refWhere = rtrim($refWhere, " OR ");
+
+        return "SELECT const.name
+                FROM sysobjects tab
+                INNER JOIN sysreferences ref ON ref.tableid = tab.id
+                INNER JOIN sysobjects const ON const.id= ref.constrid
+                WHERE tab.type = 'U' AND tab.name = " . $this->_conn->quote($table) . " AND (" . $refWhere . ")";
     }
 }

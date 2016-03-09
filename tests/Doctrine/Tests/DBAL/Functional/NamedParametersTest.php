@@ -16,11 +16,11 @@ class NamedParametersTest extends \Doctrine\Tests\DbalFunctionalTestCase
 
     public function ticketProvider()
     {
-        return array(
+        $data = array(
             array(
                 'SELECT * FROM ddc1372_foobar f WHERE f.foo = :foo AND f.bar IN (:bar)',
                 array('foo'=>1,'bar'=> array(1, 2, 3)),
-                array('foo'=>PDO::PARAM_INT,'bar'=> Connection::PARAM_INT_ARRAY,),
+                array('foo'=>PDO::PARAM_INT,'bar'=> Connection::PARAM_STR_ARRAY,),
                 array(
                     array('id'=>1,'foo'=>1,'bar'=>1),
                     array('id'=>2,'foo'=>1,'bar'=>2),
@@ -31,18 +31,7 @@ class NamedParametersTest extends \Doctrine\Tests\DbalFunctionalTestCase
             array(
                 'SELECT * FROM ddc1372_foobar f WHERE f.foo = :foo AND f.bar IN (:bar)',
                 array('foo'=>1,'bar'=> array(1, 2, 3)),
-                array('bar'=> Connection::PARAM_INT_ARRAY,'foo'=>PDO::PARAM_INT),
-                array(
-                    array('id'=>1,'foo'=>1,'bar'=>1),
-                    array('id'=>2,'foo'=>1,'bar'=>2),
-                    array('id'=>3,'foo'=>1,'bar'=>3),
-                )
-            ),
-
-            array(
-                'SELECT * FROM ddc1372_foobar f WHERE f.bar IN (:bar) AND f.foo = :foo',
-                array('foo'=>1,'bar'=> array(1, 2, 3)),
-                array('bar'=> Connection::PARAM_INT_ARRAY,'foo'=>PDO::PARAM_INT),
+                array('bar'=> Connection::PARAM_STR_ARRAY,'foo'=>PDO::PARAM_INT),
                 array(
                     array('id'=>1,'foo'=>1,'bar'=>1),
                     array('id'=>2,'foo'=>1,'bar'=>2),
@@ -76,32 +65,31 @@ class NamedParametersTest extends \Doctrine\Tests\DbalFunctionalTestCase
             array(
                 'SELECT * FROM ddc1372_foobar f WHERE f.bar IN (:bar) AND f.foo IN (:foo)',
                 array('foo'=>1,'bar'=> 2),
-                array('bar'=>PDO::PARAM_INT,'foo'=>PDO::PARAM_INT),
+                array('bar'=>PDO::PARAM_STR,'foo'=>PDO::PARAM_INT),
                 array(
                     array('id'=>2,'foo'=>1,'bar'=>2),
                 )
             ),
-
             array(
-                'SELECT * FROM ddc1372_foobar f WHERE f.bar = :arg AND f.foo <> :arg',
-                array('arg'=>'1'),
-                array('arg'=>PDO::PARAM_STR),
+                'SELECT * FROM ddc1372_foobar f WHERE f.bar = :arg1 AND f.foo <> :arg2',
+                array('arg1'=>'1', 'arg2'=>1),
+                array('arg1'=>PDO::PARAM_STR,'arg2'=>PDO::PARAM_INT),
                 array(
                     array('id'=>5,'foo'=>2,'bar'=>1),
                 )
             ),
-
             array(
-                'SELECT * FROM ddc1372_foobar f WHERE f.bar NOT IN (:arg) AND f.foo IN (:arg)',
-                array('arg'=>array(1, 2)),
-                array('arg'=>Connection::PARAM_INT_ARRAY),
+                'SELECT * FROM ddc1372_foobar f WHERE f.bar NOT IN (:arg1) AND f.foo IN (:arg2)',
+                array('arg1'=>array('1', '2'), 'arg2'=>array(1, 2)),
+                array('arg1'=>Connection::PARAM_STR_ARRAY,'arg2'=>Connection::PARAM_INT_ARRAY),
                 array(
                     array('id'=>3,'foo'=>1,'bar'=>3),
                     array('id'=>4,'foo'=>1,'bar'=>4),
                 )
             ),
-
         );
+
+        return $data;
     }
 
     public function setUp()
@@ -112,7 +100,7 @@ class NamedParametersTest extends \Doctrine\Tests\DbalFunctionalTestCase
             try {
                 $table = new \Doctrine\DBAL\Schema\Table("ddc1372_foobar");
                 $table->addColumn('id', 'integer');
-                $table->addColumn('foo','string');
+                $table->addColumn('foo','integer');
                 $table->addColumn('bar','string');
                 $table->setPrimaryKey(array('id'));
 
@@ -121,22 +109,22 @@ class NamedParametersTest extends \Doctrine\Tests\DbalFunctionalTestCase
                 $sm->createTable($table);
 
                 $this->_conn->insert('ddc1372_foobar', array(
-                        'id'    => 1, 'foo'   => 1,  'bar'   => 1
+                        'id'    => 1, 'foo'   => 1,  'bar'   => "1"
                 ));
                 $this->_conn->insert('ddc1372_foobar', array(
-                        'id'    => 2, 'foo'   => 1,  'bar'   => 2
+                        'id'    => 2, 'foo'   => 1,  'bar'   => "2"
                 ));
                 $this->_conn->insert('ddc1372_foobar', array(
-                        'id'    => 3, 'foo'   => 1,  'bar'   => 3
+                        'id'    => 3, 'foo'   => 1,  'bar'   => "3"
                 ));
                 $this->_conn->insert('ddc1372_foobar', array(
-                        'id'    => 4, 'foo'   => 1,  'bar'   => 4
+                        'id'    => 4, 'foo'   => 1,  'bar'   => "4"
                 ));
                 $this->_conn->insert('ddc1372_foobar', array(
-                        'id'    => 5, 'foo'   => 2,  'bar'   => 1
+                        'id'    => 5, 'foo'   => 2,  'bar'   => "1"
                 ));
                 $this->_conn->insert('ddc1372_foobar', array(
-                        'id'    => 6, 'foo'   => 2,  'bar'   => 2
+                        'id'    => 6, 'foo'   => 2,  'bar'   => "2"
                 ));
             } catch(\Exception $e) {
                 $this->fail($e->getMessage());

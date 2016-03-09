@@ -17,46 +17,27 @@
  * <http://www.doctrine-project.org>.
  */
 
-namespace Doctrine\DBAL\Types;
+namespace Doctrine\DBAL\Platforms;
 
-use Doctrine\DBAL\Platforms\AbstractPlatform;
+use Doctrine\DBAL\Platforms\Keywords\ASE160Keywords;
 
 /**
- * Type that maps an SQL TIME to a PHP DateTime object.
+ * Platform to ensure compatibility of Doctrine with SAP ASE 16.0 version and
+ * higher.
  *
- * @since 2.0
+ * Differences to Sybase ASE 15.7 are:
+ *
+ * - ...
  */
-class TimeType extends Type
+class ASE160Platform extends ASE157Platform
 {
     /**
      * {@inheritdoc}
+     *
+     * Returns SAP ASE 16.0 specific keywords class
      */
-    public function getName()
+    protected function getReservedKeywordsClass()
     {
-        return Type::TIME;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function getSQLDeclaration(array $fieldDeclaration, AbstractPlatform $platform)
-    {
-        return $platform->getTimeTypeDeclarationSQL($fieldDeclaration);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function convertToDatabaseValue($value, AbstractPlatform $platform)
-    {
-        return $platform->convertTimeToDatabaseValue($value);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function convertToPHPValue($value, AbstractPlatform $platform)
-    {
-        return $platform->convertFromTime($value);
+        return 'Doctrine\DBAL\Platforms\Keywords\ASE160Keywords';
     }
 }
