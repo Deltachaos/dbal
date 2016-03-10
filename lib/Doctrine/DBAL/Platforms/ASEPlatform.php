@@ -19,6 +19,7 @@
 
 namespace Doctrine\DBAL\Platforms;
 
+use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\DBALException;
 use Doctrine\DBAL\Driver\ASE\ASEException;
 use Doctrine\DBAL\LockMode;
@@ -390,10 +391,7 @@ class ASEPlatform extends AbstractPlatform
      */
     public function getClobTypeDeclarationSQL(array $field)
     {
-        #todo check
-        #todo checknow
-        //return 'TEXT';
-        return 'NVARCHAR(' . $this->getVarcharMaxLength() . ')';
+        return 'TEXT';
     }
 
     /**
@@ -551,9 +549,9 @@ class ASEPlatform extends AbstractPlatform
     public function getNowExpression()
     {
         #todo check
-        throw DBALException::notSupported(__METHOD__);
+        #todo checknow
 
-        return 'NOW()';
+        return 'getdate()';
     }
 
     /**
@@ -585,9 +583,9 @@ class ASEPlatform extends AbstractPlatform
     public function getNotExpression($expression)
     {
         #todo check
-        throw DBALException::notSupported(__METHOD__);
+        #todo checknow
 
-        return 'NOT(' . $expression . ')';
+        return parent::getNotExpression($expression);
     }
 
     /**
@@ -628,20 +626,6 @@ class ASEPlatform extends AbstractPlatform
         #todo check
         #todo checknow
         return parent::appendLockHint($fromClause, $lockMode);
-
-        switch (true) {
-            case LockMode::NONE === $lockMode:
-                return $fromClause . ' WITH (NOLOCK)';
-
-            case LockMode::PESSIMISTIC_READ === $lockMode:
-                return $fromClause . ' WITH (HOLDLOCK, ROWLOCK)';
-
-            case LockMode::PESSIMISTIC_WRITE === $lockMode:
-                return $fromClause . ' WITH (UPDLOCK, ROWLOCK)';
-
-            default:
-                return $fromClause;
-        }
     }
 
     /**
@@ -692,7 +676,7 @@ class ASEPlatform extends AbstractPlatform
      */
     public function getCommentOnColumnSQL($tableName, $columnName, $comment)
     {
-        throw DBALException::notSupported(__METHOD__);
+        return "";
     }
 
     /**
@@ -716,12 +700,6 @@ class ASEPlatform extends AbstractPlatform
                 $defaultConstraintsSql[] = 'ALTER TABLE ' . $tableName .
                     ' ADD' . $this->getDefaultConstraintDeclarationSQL($tableName, $column);
             }
-
-            /*
-            if ( ! empty($column['comment']) || is_numeric($column['comment'])) {
-                $commentsSql[] = $this->getCreateColumnCommentSQL($tableName, $column['name'], $column['comment']);
-            }
-            */
         }
 
         $columnListSql = $this->getColumnDeclarationListSQL($columns);
@@ -841,61 +819,8 @@ class ASEPlatform extends AbstractPlatform
     /**
      * {@inheritdoc}
      */
-    public function getCreateSchemaSQL($schemaName)
-    {
-        throw DBALException::notSupported(__METHOD__);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
     public function getAlterTableSQL(TableDiff $diff)
     {
-        throw DBALException::notSupported(__METHOD__);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    protected function onSchemaAlterTableAddColumn(Column $column, TableDiff $diff, &$columnSql)
-    {
-        #todo check
-        throw DBALException::notSupported(__METHOD__);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    protected function onSchemaAlterTableRemoveColumn(Column $column, TableDiff $diff, &$columnSql)
-    {
-        #todo check
-        throw DBALException::notSupported(__METHOD__);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    protected function onSchemaAlterTableChangeColumn(ColumnDiff $columnDiff, TableDiff $diff, &$columnSql)
-    {
-        #todo check
-        throw DBALException::notSupported(__METHOD__);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    protected function onSchemaAlterTableRenameColumn($oldColumnName, Column $column, TableDiff $diff, &$columnSql)
-    {
-        #todo check
-        throw DBALException::notSupported(__METHOD__);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    protected function onSchemaAlterTable(TableDiff $diff, &$sql)
-    {
-        #todo check
         throw DBALException::notSupported(__METHOD__);
     }
 
@@ -923,7 +848,16 @@ class ASEPlatform extends AbstractPlatform
     protected function getRenameIndexSQL($oldIndexName, Index $index, $tableName)
     {
         #todo check
-        throw DBALException::notSupported(__METHOD__);
+        #todo checknow
+
+        return array(
+            sprintf(
+                "EXEC sp_rename N'%s.%s', N'%s', N'INDEX'",
+                $tableName,
+                $oldIndexName,
+                $index->getQuotedName($this)
+            )
+        );
     }
 
     /**
@@ -961,36 +895,38 @@ class ASEPlatform extends AbstractPlatform
 
             $notnull = (isset($field['notnull']) && $field['notnull']) ? ' NOT NULL' : ' NULL ';
 
-            $unique = (isset($field['unique']) && $field['unique']) ?
-                ' ' . $this->getUniqueFieldDeclarationSQL() : '';
-
             $check = (isset($field['check']) && $field['check']) ?
                 ' ' . $field['check'] : '';
 
             $typeDecl = $field['type']->getSqlDeclaration($field, $this);
-            $columnDef = $typeDecl . $collation . $notnull . $unique . $check;
+            $columnDef = $typeDecl . $collation . $notnull . $check;
         }
 
         return $name . ' ' . $columnDef;
     }
 
-
     /**
-     * {@inheritdoc}
-     */
-    public function getDecimalTypeDeclarationSQL(array $columnDef)
-    {
-        #todo check
-        throw DBALException::notSupported(__METHOD__);
-    }
-
-    /**
-     * {@inheritdoc}
+     * Obtains DBMS specific SQL code portion needed to set a default value
+     * declaration to be used in statements like CREATE TABLE.
+     *
+     * @param array $field The field definition array.
+     *
+     * @return string DBMS specific SQL code portion needed to set a default value.
      */
     public function getDefaultValueDeclarationSQL($field)
     {
         #todo check
-        throw DBALException::notSupported(__METHOD__);
+        #todo checknow
+
+        if (isset($field['default'])) {
+            if (isset($field['type'])) {
+                if ((string) $field['type'] == 'Boolean') {
+                    return " DEFAULT " . $this->convertBooleans($field['default']);
+                }
+            }
+        }
+
+        return parent::getDefaultValueDeclarationSQL($field);
     }
 
     /**
@@ -1007,15 +943,6 @@ class ASEPlatform extends AbstractPlatform
      * {@inheritdoc}
      */
     public function getIndexDeclarationSQL($name, Index $index)
-    {
-        #todo check
-        throw DBALException::notSupported(__METHOD__);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function getCustomTypeDeclarationSQL(array $columnDef)
     {
         #todo check
         throw DBALException::notSupported(__METHOD__);
@@ -1086,26 +1013,7 @@ class ASEPlatform extends AbstractPlatform
      */
     public function getUniqueFieldDeclarationSQL()
     {
-        #todo check
-        throw DBALException::notSupported(__METHOD__);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function getColumnCharsetDeclarationSQL($charset)
-    {
-        #todo check
-        throw DBALException::notSupported(__METHOD__);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function getColumnCollationDeclarationSQL($collation)
-    {
-        #todo check
-        throw DBALException::notSupported(__METHOD__);
+        return '';
     }
 
     /**
@@ -1117,30 +1025,21 @@ class ASEPlatform extends AbstractPlatform
     }
 
     /**
-     * {@inheritdoc}
+     * {@inheritDoc}
      */
     public function convertBooleans($item)
     {
-        #todo check
-        throw DBALException::notSupported(__METHOD__);
-    }
+        if (is_array($item)) {
+            foreach ($item as $key => $value) {
+                if (is_bool($value) || is_numeric($item)) {
+                    $item[$key] = ($value) ? 1 : 0;
+                }
+            }
+        } elseif (is_bool($item) || is_numeric($item)) {
+            $item = ($item) ? 1 : 0;
+        }
 
-    /**
-     * {@inheritdoc}
-     */
-    public function convertFromBoolean($item)
-    {
-        #todo check
-        throw DBALException::notSupported(__METHOD__);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function convertBooleansToDatabaseValue($item)
-    {
-        #todo check
-        throw DBALException::notSupported(__METHOD__);
+        return $item;
     }
 
     /**
@@ -1296,8 +1195,18 @@ class ASEPlatform extends AbstractPlatform
      */
     protected function _getTransactionIsolationLevelSQL($level)
     {
-        #todo check
-        throw DBALException::notSupported(__METHOD__);
+        switch ($level) {
+            case Connection::TRANSACTION_READ_UNCOMMITTED:
+                return '0';
+            case Connection::TRANSACTION_READ_COMMITTED:
+                return '1';
+            case Connection::TRANSACTION_REPEATABLE_READ:
+                return '2';
+            case Connection::TRANSACTION_SERIALIZABLE:
+                return '3';
+            default:
+                throw new \InvalidArgumentException('Invalid isolation level:' . $level);
+        }
     }
 
     /**
@@ -1373,21 +1282,19 @@ class ASEPlatform extends AbstractPlatform
     }
 
     /**
-     * {@inheritdoc}
+     * {@inheritDoc}
      */
     public function getCreateViewSQL($name, $sql)
     {
-        #todo check
-        throw DBALException::notSupported(__METHOD__);
+        return 'CREATE VIEW ' . $name . ' AS ' . $sql;
     }
 
     /**
-     * {@inheritdoc}
+     * {@inheritDoc}
      */
     public function getDropViewSQL($name)
     {
-        #todo check
-        throw DBALException::notSupported(__METHOD__);
+        return 'DROP VIEW ' . $name;
     }
 
     /**
@@ -1404,12 +1311,11 @@ class ASEPlatform extends AbstractPlatform
     }
 
     /**
-     * {@inheritdoc}
+     * {@inheritDoc}
      */
     public function getSetTransactionIsolationSQL($level)
     {
-        #todo check
-        throw DBALException::notSupported(__METHOD__);
+        return 'SET TRANSACTION ISOLATION LEVEL ' . $this->_getTransactionIsolationLevelSQL($level);
     }
 
     /**
@@ -1436,8 +1342,6 @@ class ASEPlatform extends AbstractPlatform
         return 'TIME';
     }
 
-    /* supports*() methods */
-
     /**
      * {@inheritdoc}
      */
@@ -1449,27 +1353,9 @@ class ASEPlatform extends AbstractPlatform
     /**
      * {@inheritdoc}
      */
-    public function supportsAlterTable()
-    {
-        #todo check
-        throw DBALException::notSupported(__METHOD__);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
     public function supportsReleaseSavepoints()
     {
         return false;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function supportsPrimaryConstraints()
-    {
-        #todo check
-        throw DBALException::notSupported(__METHOD__);
     }
 
     /**
@@ -1488,7 +1374,11 @@ class ASEPlatform extends AbstractPlatform
      */
     public function supportsSchemas()
     {
-        return true;
+        #todo check
+        #todo checknow
+
+        // ASE supports schemas, but not in the way doctrine works with them
+        return false;
     }
 
     /**
@@ -1502,24 +1392,7 @@ class ASEPlatform extends AbstractPlatform
     /**
      * {@inheritdoc}
      */
-    public function supportsGettingAffectedRows()
-    {
-        #todo check
-        throw DBALException::notSupported(__METHOD__);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
     public function supportsInlineColumnComments()
-    {
-        return false;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function supportsCommentOnStatement()
     {
         return false;
     }
@@ -1538,33 +1411,6 @@ class ASEPlatform extends AbstractPlatform
     public function hasNativeJsonType()
     {
         return false;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function getIdentityColumnNullInsertSQL()
-    {
-        #todo check
-        throw DBALException::notSupported(__METHOD__);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function supportsViews()
-    {
-        #todo check
-        throw DBALException::notSupported(__METHOD__);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function supportsColumnCollation()
-    {
-        #todo check
-        throw DBALException::notSupported(__METHOD__);
     }
 
     /**
