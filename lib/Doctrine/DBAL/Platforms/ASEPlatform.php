@@ -33,6 +33,7 @@ use Doctrine\DBAL\Schema\ForeignKeyConstraint;
 use Doctrine\DBAL\Schema\Index;
 use Doctrine\DBAL\Schema\Table;
 use Doctrine\DBAL\Types\ConversionException;
+use Doctrine\DBAL\Types\Type;
 
 /**
  * The ASEPlatform provides the behavior, features and SQL dialect of the
@@ -1243,6 +1244,30 @@ class ASEPlatform extends AbstractPlatform
     }
 
     /**
+     * Some platforms need to convert aliases
+     *
+     * @param string $column
+     * @param string $alias
+     * @param array  $mapping
+     *
+     * @return string
+     */
+    public function selectAliasColumn($column, $alias, array $mapping = array())
+    {
+        if (isset($mapping['id']) && $mapping['id']) {
+            $mapping['id'] = false;
+
+            $dbType = Type::getType($mapping['type'])->getSQLDeclaration($mapping, $this);
+
+            if ($dbType !== null) {
+                return 'CONVERT(' . $dbType . ', ' . $column . ') AS ' . $alias;
+            }
+        }
+
+        return $column . ' AS ' . $alias;
+    }
+
+    /**
      * {@inheritdoc}
      */
     public function getCurrentDateSQL()
@@ -1623,7 +1648,7 @@ class ASEPlatform extends AbstractPlatform
         $end     = $offset + $limit;
 
         // We'll find a SELECT or SELECT distinct and prepend TOP n to it
-        $selectPattern = '/^(\s*SELECT\s+(?:DISTINCT\s+)?)(.*)(FROM\s+.*)$/i';
+        $selectPattern = '/^(\s*SELECT\s+(?:DISTINCT\s+)?)(.*?)(FROM\s+.*)$/i';
         $replacePattern = sprintf('$1%s $2%s $3', "TOP $end ", " , doctrine_rownum=identity(10) INTO #dctrn_cte");
         $query = preg_replace($selectPattern, $replacePattern, $query);
 

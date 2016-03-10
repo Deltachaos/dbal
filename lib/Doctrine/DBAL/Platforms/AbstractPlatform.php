@@ -428,6 +428,20 @@ abstract class AbstractPlatform
     }
 
     /**
+     * Gets the Doctrine types map
+     *
+     * @return array
+     */
+    public function getDoctrineTypeMappings()
+    {
+        if ($this->doctrineTypeMapping === null) {
+            $this->initializeAllDoctrineTypeMappings();
+        }
+
+        return $this->doctrineTypeMapping;
+    }
+
+    /**
      * Checks if a database type is currently supported by this platform.
      *
      * @param string $dbType
@@ -2792,6 +2806,20 @@ abstract class AbstractPlatform
         }
 
         return $val;
+    }
+
+    /**
+     * Some platforms need to convert aliases
+     *
+     * @param string $column
+     * @param string $alias
+     * @param array  $mapping
+     *
+     * @return string
+     */
+    public function selectAliasColumn($column, $alias, array $mapping = array())
+    {
+        return $column . ' AS ' . $alias;
     }
 
     /**
