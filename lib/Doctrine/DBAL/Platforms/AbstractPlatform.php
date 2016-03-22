@@ -2682,9 +2682,6 @@ abstract class AbstractPlatform
         }
 
         $val = \DateTime::createFromFormat('!' . $this->getTimeFormatString(), $value);
-        if ( ! $val) {
-            throw ConversionException::conversionFailedFormat($value, $this->getName(), $this->getTimeFormatString());
-        }
 
         return $val;
     }
@@ -2720,9 +2717,6 @@ abstract class AbstractPlatform
         }
 
         $val = \DateTime::createFromFormat('!'.$this->getDateFormatString(), $value);
-        if ( ! $val) {
-            throw ConversionException::conversionFailedFormat($value, $this->getName(), $this->getDateFormatString());
-        }
 
         return $val;
     }
@@ -2763,10 +2757,6 @@ abstract class AbstractPlatform
             $val = date_create($value);
         }
 
-        if ( ! $val) {
-            throw ConversionException::conversionFailedFormat($value, $this->getName(), $this->getDateTimeFormatString());
-        }
-
         return $val;
     }
 
@@ -2800,12 +2790,7 @@ abstract class AbstractPlatform
             return $value;
         }
 
-        $val = \DateTime::createFromFormat($this->getDateTimeTzFormatString(), $value);
-        if ( ! $val) {
-            throw ConversionException::conversionFailedFormat($value, $this->getName(), $this->getDateTimeTzFormatString());
-        }
-
-        return $val;
+        return \DateTime::createFromFormat($this->getDateTimeTzFormatString(), $value);
     }
 
     /**
@@ -3566,6 +3551,16 @@ abstract class AbstractPlatform
     public function fixSchemaElementName($schemaElementName)
     {
         return $schemaElementName;
+    }
+
+    /**
+     * Maximum number of fields in a index. If unlimited return 0
+     *
+     * @return integer
+     */
+    public function getMaxIndexFields()
+    {
+        return 0;
     }
 
     /**

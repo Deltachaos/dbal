@@ -57,6 +57,16 @@ class DateType extends Type
      */
     public function convertToPHPValue($value, AbstractPlatform $platform)
     {
-        return $platform->convertFromDate($value);
+        if ($value === null) {
+            return $value;
+        }
+
+        $val = $platform->convertFromDate($value);
+
+        if ( ! $val) {
+            throw ConversionException::conversionFailedFormat($value, $this->getName(), $platform->getDateFormatString());
+        }
+
+        return $val;
     }
 }

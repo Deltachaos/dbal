@@ -85,15 +85,24 @@ class ASEMessageHandler
     public function __construct($resource = null)
     {
         if ($resource !== null) {
-            $self = $this;
-
-            sybase_set_message_handler(function($id, $severity, $state, $line, $text) use ($self) {
-                $self->messages[] = new ASEDriverException($text, $severity, null, $state, $line, $id);
-                foreach ($this->logger as $logger) {
-                    $logger($id, $severity, $state, $line, $text);
-                }
-            }, $resource);
+            $this->setResource($resource);
         }
+    }
+
+    /**
+     * @param resource $resource
+     */
+    public function setResource($resource)
+    {
+        $self = $this;
+
+        sybase_set_message_handler(function($id, $severity, $state, $line, $text) use ($self) {
+            $self->messages[] = new ASEDriverException($text, $severity, null, $state, $line, $id);
+            file_put_contents("/var/sybase/www/mr/demo-prototype/test.log", "MSG: " . $text . "\n", \FILE_APPEND);
+            foreach ($this->logger as $logger) {
+                $logger($id, $severity, $state, $line, $text);
+            }
+        }, $resource);
     }
 
     /**

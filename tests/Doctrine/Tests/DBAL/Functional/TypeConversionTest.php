@@ -65,7 +65,7 @@ class TypeConversionTest extends \Doctrine\Tests\DbalFunctionalTestCase
             array('json_array', array('foo' => 'bar'), 'array'),
             array('object',     $obj, 'object'),
             array('float',      1.5, 'float'),
-            array('decimal',    1.55, 'string'),
+            array('decimal',    1.55, 'float'),
         );
     }
 

@@ -279,6 +279,9 @@ class ASEStatement implements IteratorAggregate, Statement
         };
 
         $this->messageHandler->addLogger($logMessages);
+
+        file_put_contents("/var/sybase/www/mr/demo-prototype/test.log", "Query (".$this->connection->database."): " . $prepared . "\n\n", \FILE_APPEND);
+
         $this->stmt = sybase_query($prepared, $this->connectionResource);
         $this->messageHandler->removeLogger($logMessages);
         $this->messages = $messages;
@@ -286,7 +289,7 @@ class ASEStatement implements IteratorAggregate, Statement
         if ($this->messageHandler->hasError()) {
             throw $this->messageHandler->getLastError();
         }
-        $this->stmtAffectedRows = sybase_affected_rows();
+        $this->stmtAffectedRows = sybase_affected_rows($this->connectionResource);
         if (!$this->stmt) {
             throw $this->messageHandler->getLastException();
         }

@@ -113,20 +113,20 @@ class ASESchemaManager extends AbstractSchemaManager
         $foreignKeys = array();
 
         foreach ($tableForeignKeys as $tableForeignKey) {
-            if ( ! isset($foreignKeys[$tableForeignKey['ForeignKey']])) {
-                $foreignKeys[$tableForeignKey['ForeignKey']] = array(
-                    'local_columns' => array($tableForeignKey['ColumnName']),
-                    'foreign_table' => $tableForeignKey['ReferenceTableName'],
-                    'foreign_columns' => array($tableForeignKey['ReferenceColumnName']),
-                    'name' => $tableForeignKey['ForeignKey'],
+            if ( ! isset($foreignKeys[$tableForeignKey['foreign_key']])) {
+                $foreignKeys[$tableForeignKey['foreign_key']] = array(
+                    'local_columns' => array($tableForeignKey['column_name']),
+                    'foreign_table' => $tableForeignKey['reference_table_name'],
+                    'foreign_columns' => array($tableForeignKey['reference_column_name']),
+                    'name' => $tableForeignKey['foreign_key'],
                     'options' => array(
                         'onUpdate' => str_replace('_', ' ', $tableForeignKey['update_referential_action_desc']),
                         'onDelete' => str_replace('_', ' ', $tableForeignKey['delete_referential_action_desc'])
                     )
                 );
             } else {
-                $foreignKeys[$tableForeignKey['ForeignKey']]['local_columns'][] = $tableForeignKey['ColumnName'];
-                $foreignKeys[$tableForeignKey['ForeignKey']]['foreign_columns'][] = $tableForeignKey['ReferenceColumnName'];
+                $foreignKeys[$tableForeignKey['foreign_key']]['local_columns'][] = $tableForeignKey['column_name'];
+                $foreignKeys[$tableForeignKey['foreign_key']]['foreign_columns'][] = $tableForeignKey['reference_column_name'];
             }
         }
 
@@ -249,8 +249,7 @@ class ASESchemaManager extends AbstractSchemaManager
     {
         $refWhere = "";
 
-        // ASE can reference 1-8 columns in a constraint
-        for ($i = 1; $i <= 8; $i++) {
+        for ($i = 1; $i <= $this->_platform->getMaxIndexFields(); $i++) {
             $refWhere .= "(
                 SELECT substring(name,1,30)
                 FROM syscolumns

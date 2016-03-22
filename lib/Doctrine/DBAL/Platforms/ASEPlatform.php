@@ -165,7 +165,7 @@ class ASEPlatform extends AbstractPlatform
      */
     public static function quote($value, $type=null)
     {
-        if (is_null($value)) {
+        if (is_null($value) || $value === '') {
             return 'NULL';
         }
 
@@ -260,7 +260,7 @@ class ASEPlatform extends AbstractPlatform
     {
         #todo check
         #todo checknow
-        return 'BIT';
+        return 'TINYINT';
     }
 
     /**
@@ -645,30 +645,53 @@ class ASEPlatform extends AbstractPlatform
     }
 
     /**
-     * {@inheritdoc}
+     * {@inheritDoc}
      */
     public function getDropIndexSQL($index, $table = null)
     {
         #todo check
-        throw DBALException::notSupported(__METHOD__);
+        #todo checknow
+
+        if ($index instanceof Index) {
+            $index = $index->getQuotedName($this);
+        } elseif (!is_string($index)) {
+            throw new \InvalidArgumentException('AbstractPlatform::getDropIndexSQL() expects $index parameter to be string or \Doctrine\DBAL\Schema\Index.');
+        }
+
+        if (!isset($table)) {
+            return 'DROP INDEX ' . $index;
+        }
+
+        if ($table instanceof Table) {
+            $table = $table->getQuotedName($this);
+        }
+
+        return "IF EXISTS (SELECT * FROM sysobjects WHERE name = '$index')
+                    ALTER TABLE " . $table . " DROP CONSTRAINT " . $index . "
+                ELSE
+                    DROP INDEX " . $table . "."  . $index;
     }
 
     /**
-     * {@inheritdoc}
-     */
-    public function getDropConstraintSQL($constraint, $table)
-    {
-        #todo check
-        throw DBALException::notSupported(__METHOD__);
-    }
-
-    /**
-     * {@inheritdoc}
+     * {@inheritDoc}
      */
     public function getDropForeignKeySQL($foreignKey, $table)
     {
         #todo check
-        throw DBALException::notSupported(__METHOD__);
+        #todo checknow
+
+        if (! $foreignKey instanceof ForeignKeyConstraint) {
+            $foreignKey = new Identifier($foreignKey);
+        }
+
+        if (! $table instanceof Table) {
+            $table = new Identifier($table);
+        }
+
+        $foreignKey = $foreignKey->getQuotedName($this);
+        $table = $table->getQuotedName($this);
+
+        return 'ALTER TABLE ' . $table . ' DROP CONSTRAINT ' . $foreignKey;
     }
 
     /**
@@ -712,8 +735,8 @@ class ASEPlatform extends AbstractPlatform
 
         if (isset($options['primary']) && !empty($options['primary'])) {
             $flags = '';
-            if (isset($options['primary_index']) && $options['primary_index']->hasFlag('nonclustered')) {
-                $flags = ' NONCLUSTERED';
+            if (isset($options['primary_index'])) {
+                $flags = $this->getCreatePrimaryKeySQLFlags($options['primary_index']);
             }
             $columnListSql .= ', PRIMARY KEY' . $flags . ' (' . implode(', ', array_unique(array_values($options['primary']))) . ')';
         }
@@ -778,12 +801,47 @@ class ASEPlatform extends AbstractPlatform
     }
 
     /**
+     * Returns the SQL to create an index on a table on this platform.
+     *
+     * @param \Doctrine\DBAL\Schema\Index        $index
+     * @param \Doctrine\DBAL\Schema\Table|string $table The name of the table on which the index is to be created.
+     *
+     * @return string
+     *
+     * @throws \InvalidArgumentException
+     */
+    public function getCreateIndexSQL(Index $index, $table)
+    {
+        if ($table instanceof Table) {
+            $table = $table->getQuotedName($this);
+        }
+        $name = $index->getQuotedName($this);
+        $columns = $index->getQuotedColumns($this);
+
+        if (count($columns) == 0) {
+            throw new \InvalidArgumentException("Incomplete definition. 'columns' required.");
+        }
+
+        if ($index->isPrimary()) {
+            return $this->getCreatePrimaryKeySQL($index, $table);
+        }
+
+        $query = 'CREATE ' . $this->getCreateIndexSQLFlags($index) . 'INDEX ' . $name . ' ON ' . $table;
+        $query .= $this->getCreateIndexSQLFlagsWith($index);
+        $query .= ' (' . $this->getIndexFieldDeclarationListSQL($columns) . ')' . $this->getPartialIndexSQL($index);
+
+        return $query;
+    }
+
+    /**
      * {@inheritdoc}
      */
     public function getCreateConstraintSQL(Constraint $constraint, $table)
     {
         #todo check
-        throw DBALException::notSupported(__METHOD__);
+        #todo checknow
+
+        return parent::getCreateConstraintSQL($constraint, $table);
     }
 
     /**
@@ -808,12 +866,78 @@ class ASEPlatform extends AbstractPlatform
     }
 
     /**
-     * {@inheritdoc}
+     * Returns the SQL for primary key index flags
+     *
+     * @param \Doctrine\DBAL\Schema\Index        $index
+     *
+     * @return string
+     */
+    protected function getCreateIndexSQLFlagsWith(Index $index)
+    {
+        $flags = '';
+
+        if ($index->hasOption('fillfactor') ||
+            $index->hasOption('max_rows_per_page') ||
+            $index->hasOption('reservepagegap') ||
+            $index->hasOption('dml_logging')) {
+
+            $flags .= ' WITH';
+
+            if ($index->hasOption('fillfactor')) {
+                $flags .= "fillfactor = " . $index->getOption('fillfactor') . ", ";
+            }
+            if ($index->hasOption('max_rows_per_page')) {
+                $flags .= "max_rows_per_page = " . $index->getOption('max_rows_per_page') . ", ";
+            }
+            if ($index->hasOption('reservepagegap')) {
+                $flags .= "reservepagegap = " . $index->getOption('reservepagegap') . ", ";
+            }
+
+            $flags = rtrim($flags, ", ");
+
+        }
+
+        return $flags;
+    }
+
+    /**
+     * Returns the SQL for primary key index flags
+     *
+     * @param \Doctrine\DBAL\Schema\Index        $index
+     *
+     * @return string
+     */
+    protected function getCreatePrimaryKeySQLFlags(Index $index)
+    {
+        $flags = '';
+
+        if ($index->hasFlag('clustered')) {
+            $flags .= 'CLUSTERED ';
+        } elseif ($index->hasFlag('nonclustered')) {
+            $flags .= 'NONCLUSTERED ';
+        }
+
+        if ($index->hasFlag('asc') || $index->hasFlag('desc')) {
+            if ($index->hasFlag('asc')) {
+                $flags .= ' ASC';
+            } else {
+                $flags .= ' DESC';
+            }
+        }
+
+        $flags .= $this->getCreateIndexSQLFlagsWith($index);
+
+        return $flags;
+    }
+
+    /**
+     * {@inheritDoc}
      */
     public function getCreatePrimaryKeySQL(Index $index, $table)
     {
-        #todo check
-        throw DBALException::notSupported(__METHOD__);
+        return 'ALTER TABLE ' . $table . ' ADD PRIMARY KEY' .
+            $this->getCreatePrimaryKeySQLFlags($index) .
+            ' (' . $this->getIndexFieldDeclarationListSQL($index->getQuotedColumns($this)) . ')';
     }
 
     /**
@@ -830,7 +954,9 @@ class ASEPlatform extends AbstractPlatform
     protected function getPreAlterTableIndexForeignKeySQL(TableDiff $diff)
     {
         #todo check
-        throw DBALException::notSupported(__METHOD__);
+        #todo checknow
+
+        return parent::getPreAlterTableIndexForeignKeySQL($diff);
     }
 
     /**
@@ -839,7 +965,9 @@ class ASEPlatform extends AbstractPlatform
     protected function getPostAlterTableIndexForeignKeySQL(TableDiff $diff)
     {
         #todo check
-        throw DBALException::notSupported(__METHOD__);
+        #todo checknow
+
+        return parent::getPreAlterTableIndexForeignKeySQL($diff);
     }
 
     /**
@@ -847,12 +975,9 @@ class ASEPlatform extends AbstractPlatform
      */
     protected function getRenameIndexSQL($oldIndexName, Index $index, $tableName)
     {
-        #todo check
-        #todo checknow
-
         return array(
             sprintf(
-                "EXEC sp_rename N'%s.%s', N'%s', N'INDEX'",
+                "EXEC sp_rename N'%s.%s', N'%s', N'index'",
                 $tableName,
                 $oldIndexName,
                 $index->getQuotedName($this)
@@ -866,7 +991,9 @@ class ASEPlatform extends AbstractPlatform
     protected function _getAlterTableIndexForeignKeySQL(TableDiff $diff)
     {
         #todo check
-        throw DBALException::notSupported(__METHOD__);
+        #todo checknow
+
+        return parent::_getAlterTableIndexForeignKeySQL($diff);
     }
 
     /**
@@ -944,7 +1071,7 @@ class ASEPlatform extends AbstractPlatform
      */
     public function getIndexDeclarationSQL($name, Index $index)
     {
-        #todo check
+        // Index declaration in statements like CREATE TABLE is not supported.
         throw DBALException::notSupported(__METHOD__);
     }
 
@@ -1101,6 +1228,28 @@ class ASEPlatform extends AbstractPlatform
     /**
      * {@inheritdoc}
      */
+    public function convertDateTimeTzToDatabaseValue(\DateTime $value = null)
+    {
+        $value = parent::convertDateTimeToDatabaseValue($value);
+
+        $value = $this->fixDateTimeToDatabaseValue($value);
+
+        return $value;
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function convertFromDateTimeTz($value)
+    {
+        $value = $this->fixDateTimeFromDatabaseValue($value);
+
+        return parent::convertFromDateTime($value);
+    }
+
+    /**
+     * {@inheritdoc}
+     */
     public function convertDateToDatabaseValue(\DateTime $value = null)
     {
         $value = parent::convertDateToDatabaseValue($value);
@@ -1242,8 +1391,41 @@ class ASEPlatform extends AbstractPlatform
      */
     public function getListTableColumnsSQL($table, $database = null)
     {
-        #todo check
-        throw DBALException::notSupported(__METHOD__);
+        $prefix = "";
+        if ($database != null) {
+            $prefix = $database . ".dbo.";
+        }
+
+        return 'SELECT  col.name,
+                        t.name,
+                        col.length,
+                        (
+                            CASE WHEN
+                              status & 8 = 8
+                            THEN
+                              0
+                            ELSE
+                              1
+                            END
+                        ) AS notnull,
+                        "" AS [default],
+                        col.scale,
+                        col.prec as precision,
+                        (
+                            CASE WHEN
+                              status & 128 = 128
+                            THEN
+                              1
+                            ELSE
+                              0
+                            END
+                        ) AS autoincrement,
+                        "NULL" AS [collation],
+                        "" AS [comment]
+                FROM ' . $prefix . 'syscolumns AS col
+                JOIN ' . $prefix . 'systypes AS t ON t.usertype = col.usertype
+                WHERE col.id = object_id("' . $prefix . $table .'")
+        ';
     }
 
     /**
@@ -1260,7 +1442,13 @@ class ASEPlatform extends AbstractPlatform
     public function getListViewsSQL($database)
     {
         #todo check
-        throw DBALException::notSupported(__METHOD__);
+        #todo checknow
+
+        if ($database != null) {
+            $prefix = $database . ".dbo.";
+        }
+
+        return 'SELECT name FROM '.$prefix.'sysobjects WHERE type = "V" AND name != "sysquerymetrics" ORDER BY name';
     }
 
     /**
@@ -1268,8 +1456,70 @@ class ASEPlatform extends AbstractPlatform
      */
     public function getListTableIndexesSQL($table, $currentDatabase = null)
     {
-        #todo check
-        throw DBALException::notSupported(__METHOD__);
+        #todo read flags
+
+        $prefix = "";
+        if ($currentDatabase != null) {
+            $prefix = $currentDatabase . ".dbo.";
+        }
+
+        $getForIndex = function($i) use($prefix, $table, $currentDatabase) {
+            return '
+                SELECT
+                    idx.name AS name,
+                    index_col("' . $prefix . $table .'", idx.indid, '.$i.') AS column_name,
+                    (
+                      CASE WHEN
+                        idx.status & 2 = 2
+                      THEN
+                        0
+                      ELSE
+                        1
+                      END
+                    ) AS non_unique,
+                    (
+                      CASE WHEN
+                        idx.status & 2048 = 2048
+                      THEN
+                        1
+                      ELSE
+                        0
+                      END
+                    ) AS [primary],
+                    "" as flags,
+                    idx.indid AS idxpos,
+                    '.$i.' AS colpos
+                FROM ' . $prefix . 'sysobjects AS tbl
+                JOIN ' . $prefix . 'sysindexes AS idx on tbl.id = idx.id
+                WHERE
+                    idx.keycnt > '.($i - 1).' AND
+                    tbl.id = object_id("' . $prefix . $table .'")
+            ';
+        };
+
+        $sql = "";
+
+        for ($i = 1; $i <= $this->getMaxIndexFields(); $i++) {
+            $sql .= $getForIndex($i) . "\nUNION\n";
+        }
+        $sql = preg_replace('/UNION$/', '', rtrim($sql));
+
+        $sql = '
+            SELECT
+                name,
+                column_name,
+                non_unique,
+                [primary],
+                [flags]
+            FROM ('.$sql.') AS sub
+            WHERE
+                sub.column_name != NULL
+            ORDER BY
+                sub.idxpos,
+                sub.colpos
+        ';
+
+        return $sql;
     }
 
     /**
@@ -1277,8 +1527,57 @@ class ASEPlatform extends AbstractPlatform
      */
     public function getListTableForeignKeysSQL($table)
     {
-        #todo check
-        throw DBALException::notSupported(__METHOD__);
+        $prefix = "";
+
+        $getForIndex = function($i) use($prefix, $table) {
+            return '
+                SELECT
+                  co.name AS foreign_key,
+                  fu.name AS schema_name,
+                  fo.name AS table_name,
+                  (SELECT name FROM ' . $prefix . 'syscolumns WHERE id=c.tableid AND colid=c.fokey'.($i).') AS column_name,
+                  ru.name AS reference_schema_name,
+                  ro.name AS reference_table_name,
+                  (SELECT name FROM ' . $prefix . 'syscolumns WHERE id=c.tableid AND colid=c.refkey'.($i).') AS reference_column_name,
+                  c.indexid AS idxpos,
+                  '.$i.' AS colpos
+                FROM
+                  ' . $prefix . 'sysreferences AS c
+                JOIN ' . $prefix . 'sysobjects AS co ON c.constrid = co.id
+                JOIN ' . $prefix . 'sysobjects AS fo ON c.tableid = fo.id
+                JOIN ' . $prefix . 'sysobjects AS ro ON c.reftabid = ro.id
+                JOIN ' . $prefix . 'sysusers AS fu ON fu.uid = fo.uid
+                JOIN ' . $prefix . 'sysusers AS ru ON ru.uid = ro.uid
+                WHERE
+                  c.keycnt > '.($i - 1).' AND
+                  fo.name = "' . $table .'"
+            ';
+        };
+
+
+        $sql = "";
+
+        for ($i = 1; $i <= $this->getMaxIndexFields(); $i++) {
+            $sql .= $getForIndex($i) . "\nUNION\n";
+        }
+        $sql = preg_replace('/UNION$/', '', rtrim($sql));
+
+        $sql = '
+            SELECT
+                foreign_key,
+                schema_name,
+                table_name,
+                column_name,
+                reference_schema_name,
+                reference_table_name,
+                reference_column_name
+            FROM ('.$sql.') AS sub
+            ORDER BY
+                sub.idxpos,
+                sub.colpos
+        ';
+
+        return $sql;
     }
 
     /**
@@ -1494,9 +1793,22 @@ class ASEPlatform extends AbstractPlatform
         $end     = $offset + $limit;
 
         // We'll find a SELECT or SELECT distinct and prepend TOP n to it
-        $selectPattern = '/^(\s*SELECT\s+(?:DISTINCT\s+)?)(.*?)(FROM\s+.*)$/i';
-        $replacePattern = sprintf('$1%s $2%s $3', "TOP $end ", " , doctrine_rownum=identity(10) INTO #dctrn_cte");
-        $query = preg_replace($selectPattern, $replacePattern, $query);
+        $selectPattern = '/^(\s*SELECT\s+(?:DISTINCT\s+)?)(.*?)(.*)(FROM\s+.*)$/i';
+        $parts = array();
+        $matches = array();
+        if (preg_match($selectPattern, $query, $matches)) {
+            $intoPart = " , doctrine_rownum=identity(10) INTO #dctrn_cte ";
+
+            $parts['select'] = $matches[1] . "TOP $end " . $matches[2];
+            $parts['from'] = $matches[3] . $intoPart;
+
+            $matchesFrom = array();
+            if (!preg_match('/SELECT.*[\s]FROM.*$/i', $matches[3]) && preg_match('/^(.*)[\s]FROM(.*)$/i', $matches[3], $matchesFrom)) {
+                $parts['from'] = $matchesFrom[1] . $intoPart . " FROM " . $matchesFrom[2];
+            }
+
+            $query = $parts['select'] . $parts['from'] . $matches[4];
+        }
 
         // Build a new limited query around the original, using a CTE
         return sprintf(
@@ -1523,6 +1835,14 @@ class ASEPlatform extends AbstractPlatform
         }
 
         return $schemaElementName;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function getMaxIndexFields()
+    {
+        return 16;
     }
 
     /**
@@ -1611,5 +1931,4 @@ class ASEPlatform extends AbstractPlatform
 
         return strtoupper(dechex(crc32($identifier->getName())));
     }
-
 }

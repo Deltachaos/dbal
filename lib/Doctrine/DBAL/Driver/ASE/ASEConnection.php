@@ -60,12 +60,32 @@ class ASEConnection implements Connection, ServerInfoAwareConnection
     /**
      * @var string
      */
-    protected $database;
+    public $database;
 
     /**
      * @var Driver
      */
     protected $driver;
+
+    /**
+     * @var string
+     */
+    protected $username;
+
+    /**
+     * @var string
+     */
+    protected $password;
+
+    /**
+     * @var string
+     */
+    protected $charset;
+
+    /**
+     * @var string
+     */
+    protected $server;
 
     /**
      * @param Driver $driver
@@ -79,6 +99,8 @@ class ASEConnection implements Connection, ServerInfoAwareConnection
         $this->driver = $driver;
         $this->appname = md5(uniqid());
 
+        $this->server = $server;
+
         $username = null;
         $password = null;
         $charset = null;
@@ -86,14 +108,17 @@ class ASEConnection implements Connection, ServerInfoAwareConnection
         if (isset($driverOptions['user'])) {
             $username = $driverOptions['user'];
         }
+        $this->username = $username;
 
         if (isset($driverOptions['password'])) {
             $password = $driverOptions['password'];
         }
+        $this->password = $password;
 
         if (isset($driverOptions['charset'])) {
             $charset = $driverOptions['charset'];
         }
+        $this->charset = $charset;
 
         if (!isset($driverOptions['dbname'])) {
             $driverOptions['dbname'] = self::MASTER_DB;
@@ -101,32 +126,45 @@ class ASEConnection implements Connection, ServerInfoAwareConnection
 
         $this->database = $database = $driverOptions['dbname'];
 
+        $this->lastInsertId = new LastInsertId();
+
         ASEMessageHandler::registerLogger();
         ASEMessageHandler::clearGlobal();
 
+        $this->reconnect();
+    }
+
+    public function reconnect()
+    {
+        file_put_contents("/var/sybase/www/mr/demo-prototype/test.log", "Connect (".$this->database.")\n\n", \FILE_APPEND);
+
+        $this->close();
+
         try {
-            $this->connectionResource = sybase_connect($server, $username, $password, $charset, $this->appname, true);
+            $this->connectionResource = sybase_connect($this->server, $this->username, $this->password, $this->charset, $this->appname, true);
         } catch (\Throwable $e) {
             throw DBALException::driverException($this->driver, ASEMessageHandler::fromThrowable($e));
         } catch (\Exception $e) {
             throw DBALException::driverException($this->driver, ASEMessageHandler::fromThrowable($e));
         }
-        $this->messageHandler = new ASEMessageHandler($this->connectionResource);
+        if ($this->messageHandler instanceof  ASEMessageHandler) {
+            $this->messageHandler->setResource($this->connectionResource);
+        } else {
+            $this->messageHandler = new ASEMessageHandler($this->connectionResource);
+        }
 
         if (!$this->connectionResource) {
             throw DBALException::driverException($this->driver, $this->messageHandler->getLastException());
         }
 
-        if (isset($database)) {
+        if (isset($this->database)) {
             $this->messageHandler->clear();
-            sybase_select_db($database, $this->connectionResource);
+            sybase_select_db($this->database, $this->connectionResource);
 
             if ($this->messageHandler->hasError()) {
                 throw DBALException::driverException($this->driver, $this->messageHandler->getLastException());
-           }
+            }
         }
-
-        $this->lastInsertId = new LastInsertId();
     }
 
     /**

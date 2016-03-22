@@ -46,6 +46,15 @@ class BlobTest extends \Doctrine\Tests\DbalFunctionalTestCase
         $this->assertEquals(1, $ret);
     }
 
+    public function testInsertStream()
+    {
+        $ret = $this->_conn->insert('blob_table',
+            array('id' => 1, 'clobfield' => 'test', 'blobfield' => 'test', 'binaryfield' => 'test'),
+            array(\PDO::PARAM_INT, \PDO::PARAM_STR, \PDO::PARAM_LOB, \PDO::PARAM_LOB)
+        );
+        $this->assertEquals(1, $ret);
+    }
+
     public function testSelect()
     {
         $ret = $this->_conn->insert('blob_table',

@@ -57,6 +57,16 @@ class DateTimeType extends Type
      */
     public function convertToPHPValue($value, AbstractPlatform $platform)
     {
-        return $platform->convertFromDateTime($value);
+        if ($value === null) {
+            return $value;
+        }
+
+        $val = $platform->convertFromDateTime($value);
+
+        if ( ! $val) {
+            throw ConversionException::conversionFailedFormat($value, $this->getName(), $platform->getDateTimeFormatString());
+        }
+
+        return $val;
     }
 }

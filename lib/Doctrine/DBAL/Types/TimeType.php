@@ -57,6 +57,16 @@ class TimeType extends Type
      */
     public function convertToPHPValue($value, AbstractPlatform $platform)
     {
-        return $platform->convertFromTime($value);
+        if ($value === null) {
+            return $value;
+        }
+
+        $val = $platform->convertFromTime($value);
+
+        if ( ! $val ) {
+            throw ConversionException::conversionFailedFormat($value, $this->getName(), $platform->getTimeFormatString());
+        }
+
+        return $val;
     }
 }
