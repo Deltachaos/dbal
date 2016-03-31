@@ -23,7 +23,7 @@ namespace Doctrine\DBAL\Driver\ASE;
  * Last Id Data Container.
  *
  * @since 2.6
- * @author Maximilian Ruta <mr@xtain.net>
+ * @author Maximilian Ruta <Maximilian.Ruta@partner.commerzbank.com>
  */
 class LastInsertId
 {

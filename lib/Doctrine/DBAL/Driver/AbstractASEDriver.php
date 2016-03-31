@@ -34,7 +34,7 @@ use Doctrine\DBAL\Exception;
 /**
  * Abstract base implementation of the {@link Doctrine\DBAL\Driver} interface for ASE based drivers.
  *
- * @author Maximilian Ruta <mr@xtain.net>
+ * @author Maximilian Ruta <Maximilian.Ruta@partner.commerzbank.com>
  * @link   www.doctrine-project.org
  * @since  2.6
  */

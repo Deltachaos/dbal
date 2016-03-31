@@ -41,7 +41,7 @@ use Doctrine\DBAL\Types\Type;
  * ASE database platform.
  *
  * @since 2.6
- * @author Maximilian Ruta <mr@xtain.net>
+ * @author Maximilian Ruta <Maximilian.Ruta@partner.commerzbank.com>
  */
 class ASEPlatform extends AbstractPlatform
 {
@@ -258,8 +258,6 @@ class ASEPlatform extends AbstractPlatform
      */
     public function getBooleanTypeDeclarationSQL(array $field)
     {
-        #todo check
-        #todo checknow
         return 'TINYINT';
     }
 
@@ -268,8 +266,6 @@ class ASEPlatform extends AbstractPlatform
      */
     public function getIntegerTypeDeclarationSQL(array $field)
     {
-        #todo check
-        #todo checknow
         return 'INT' . $this->_getCommonIntegerTypeDeclarationSQL($field);
     }
 
@@ -278,8 +274,6 @@ class ASEPlatform extends AbstractPlatform
      */
     public function getBigIntTypeDeclarationSQL(array $field)
     {
-        #todo check
-        #todo checknow
         return 'BIGINT' . $this->_getCommonIntegerTypeDeclarationSQL($field);
     }
 
@@ -288,8 +282,6 @@ class ASEPlatform extends AbstractPlatform
      */
     public function getSmallIntTypeDeclarationSQL(array $field)
     {
-        #todo check
-        #todo checknow
         return 'SMALLINT' . $this->_getCommonIntegerTypeDeclarationSQL($field);
     }
 
@@ -298,8 +290,6 @@ class ASEPlatform extends AbstractPlatform
      */
     protected function _getCommonIntegerTypeDeclarationSQL(array $columnDef)
     {
-        #todo check
-        #todo checknow
         return (!empty($columnDef['autoincrement'])) ? ' IDENTITY' : '';
     }
 
@@ -308,8 +298,6 @@ class ASEPlatform extends AbstractPlatform
      */
     protected function initializeDoctrineTypeMappings()
     {
-        #todo check
-        #todo checknow
         $this->doctrineTypeMapping = array(
             'bigint' => 'bigint',
             'numeric' => 'decimal',
@@ -340,28 +328,10 @@ class ASEPlatform extends AbstractPlatform
     }
 
     /**
-     * {@inheritdoc}
-     */
-    public function getVarcharTypeDeclarationSQL(array $field)
-    {
-        return parent::getVarcharTypeDeclarationSQL($field);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function getBinaryTypeDeclarationSQL(array $field)
-    {
-        return parent::getBinaryTypeDeclarationSQL($field);
-    }
-
-    /**
      * {@inheritDoc}
      */
     public function getGuidTypeDeclarationSQL(array $field)
     {
-        #todo check
-        #todo checknow
         return 'UNIQUEIDENTIFIER';
     }
 
@@ -370,8 +340,6 @@ class ASEPlatform extends AbstractPlatform
      */
     protected function getVarcharTypeDeclarationSQLSnippet($length, $fixed)
     {
-        #todo check
-        #todo checknow
         return $fixed ? ($length ? 'NCHAR(' . $length . ')' : 'CHAR('.$this->getVarcharDefaultLength().')') : ($length ? 'NVARCHAR(' . $length . ')' : 'NVARCHAR('.$this->getVarcharDefaultLength().')');
     }
 
@@ -380,9 +348,6 @@ class ASEPlatform extends AbstractPlatform
      */
     protected function getBinaryTypeDeclarationSQLSnippet($length, $fixed)
     {
-        #todo check
-        #todo checknow
-        //return $fixed ? 'BINARY(' . ($length ?: $this->getBinaryDefaultLength()) . ')' : 'VARBINARY(' . ($length ?: $this->getBinaryDefaultLength()) . ')';
         return $this->getVarcharTypeDeclarationSQLSnippet($length, $fixed);
     }
 
@@ -399,9 +364,6 @@ class ASEPlatform extends AbstractPlatform
      */
     public function getBlobTypeDeclarationSQL(array $field)
     {
-        #todo check
-        #todo checknow
-
         return 'NVARCHAR(' . $this->getBinaryMaxLength() . ')';
     }
 
@@ -418,8 +380,6 @@ class ASEPlatform extends AbstractPlatform
      */
     public function getIdentifierQuoteCharacter()
     {
-        #todo check
-        #todo checknow
         return parent::getIdentifierQuoteCharacter();
     }
 
@@ -492,7 +452,6 @@ class ASEPlatform extends AbstractPlatform
      */
     public function getTrimExpression($str, $pos = self::TRIM_UNSPECIFIED, $char = false)
     {
-        #todo check
         if ( ! $char) {
             switch ($pos) {
                 case self::TRIM_LEADING:
@@ -548,9 +507,6 @@ class ASEPlatform extends AbstractPlatform
      */
     public function getNowExpression()
     {
-        #todo check
-        #todo checknow
-
         return 'getdate()';
     }
 
@@ -559,7 +515,6 @@ class ASEPlatform extends AbstractPlatform
      */
     public function getSubstringExpression($value, $from, $length = null)
     {
-        #todo check
         if ($length === null) {
             $length = $this->getLengthExpression($value) . ' - ' . $from . ' + 1';
         }
@@ -582,9 +537,6 @@ class ASEPlatform extends AbstractPlatform
      */
     public function getNotExpression($expression)
     {
-        #todo check
-        #todo checknow
-
         return parent::getNotExpression($expression);
     }
 
@@ -619,16 +571,6 @@ class ASEPlatform extends AbstractPlatform
     }
 
     /**
-     * {@inheritDoc}
-     */
-    public function appendLockHint($fromClause, $lockMode)
-    {
-        #todo check
-        #todo checknow
-        return parent::appendLockHint($fromClause, $lockMode);
-    }
-
-    /**
      * Returns the SQL snippet to drop an existing database.
      *
      * @param string $database The name of the database that should be dropped.
@@ -649,9 +591,6 @@ class ASEPlatform extends AbstractPlatform
      */
     public function getDropIndexSQL($index, $table = null)
     {
-        #todo check
-        #todo checknow
-
         if ($index instanceof Index) {
             $index = $index->getQuotedName($this);
         } elseif (!is_string($index)) {
@@ -677,9 +616,6 @@ class ASEPlatform extends AbstractPlatform
      */
     public function getDropForeignKeySQL($foreignKey, $table)
     {
-        #todo check
-        #todo checknow
-
         if (! $foreignKey instanceof ForeignKeyConstraint) {
             $foreignKey = new Identifier($foreignKey);
         }
@@ -707,7 +643,6 @@ class ASEPlatform extends AbstractPlatform
      */
     protected function _getCreateTableSQL($tableName, array $columns, array $options = array())
     {
-        #todo checknow
         $defaultConstraintsSql = array();
         $commentsSql           = array();
 
@@ -778,7 +713,6 @@ class ASEPlatform extends AbstractPlatform
      */
     public function getDefaultConstraintDeclarationSQL($table, array $column)
     {
-        #todo checknow
         if ( ! isset($column['default'])) {
             throw new \InvalidArgumentException("Incomplete column definition. 'default' required.");
         }
@@ -834,23 +768,10 @@ class ASEPlatform extends AbstractPlatform
     }
 
     /**
-     * {@inheritdoc}
-     */
-    public function getCreateConstraintSQL(Constraint $constraint, $table)
-    {
-        #todo check
-        #todo checknow
-
-        return parent::getCreateConstraintSQL($constraint, $table);
-    }
-
-    /**
      * {@inheritDoc}
      */
     protected function getCreateIndexSQLFlags(Index $index)
     {
-        #todo check
-        #todo checknow
         $type = '';
         if ($index->isUnique()) {
             $type .= 'UNIQUE ';
@@ -941,33 +862,11 @@ class ASEPlatform extends AbstractPlatform
     }
 
     /**
-     * {@inheritdoc}
+     * {@inheritDoc}
      */
     public function getAlterTableSQL(TableDiff $diff)
     {
         throw DBALException::notSupported(__METHOD__);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    protected function getPreAlterTableIndexForeignKeySQL(TableDiff $diff)
-    {
-        #todo check
-        #todo checknow
-
-        return parent::getPreAlterTableIndexForeignKeySQL($diff);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    protected function getPostAlterTableIndexForeignKeySQL(TableDiff $diff)
-    {
-        #todo check
-        #todo checknow
-
-        return parent::getPreAlterTableIndexForeignKeySQL($diff);
     }
 
     /**
@@ -987,33 +886,11 @@ class ASEPlatform extends AbstractPlatform
 
     /**
      * {@inheritdoc}
-     */
-    protected function _getAlterTableIndexForeignKeySQL(TableDiff $diff)
-    {
-        #todo check
-        #todo checknow
-
-        return parent::_getAlterTableIndexForeignKeySQL($diff);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function getColumnDeclarationListSQL(array $fields)
-    {
-        #todo check
-        return parent::getColumnDeclarationListSQL($fields);
-    }
-
-    /**
-     * {@inheritdoc}
      *
      * Modifies column declaration order as it differs in Microsoft SQL Server.
      */
     public function getColumnDeclarationSQL($name, array $field)
     {
-        #todo check
-        #todo checknow
         if (isset($field['columnDefinition'])) {
             $columnDef = $this->getCustomTypeDeclarationSQL($field);
         } else {
@@ -1042,9 +919,6 @@ class ASEPlatform extends AbstractPlatform
      */
     public function getDefaultValueDeclarationSQL($field)
     {
-        #todo check
-        #todo checknow
-
         if (isset($field['default'])) {
             if (isset($field['type'])) {
                 if ((string) $field['type'] == 'Boolean') {
@@ -1054,16 +928,6 @@ class ASEPlatform extends AbstractPlatform
         }
 
         return parent::getDefaultValueDeclarationSQL($field);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function getCheckDeclarationSQL(array $definition)
-    {
-        #todo check
-        #todo checknow
-        return parent::getCheckDeclarationSQL($definition);
     }
 
     /**
@@ -1096,43 +960,7 @@ class ASEPlatform extends AbstractPlatform
      */
     public function getForeignKeyDeclarationSQL(ForeignKeyConstraint $foreignKey)
     {
-        #todo check
-        #todo checknow
-
         return parent::getForeignKeyDeclarationSQL($foreignKey);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function getAdvancedForeignKeyOptionsSQL(ForeignKeyConstraint $foreignKey)
-    {
-        #todo check
-        #todo checknow
-
-        return parent::getAdvancedForeignKeyOptionsSQL($foreignKey);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function getForeignKeyReferentialActionSQL($action)
-    {
-        #todo check
-        #todo checknow
-
-        return parent::getForeignKeyReferentialActionSQL($action);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function getForeignKeyBaseDeclarationSQL(ForeignKeyConstraint $foreignKey)
-    {
-        #todo check
-        #todo checknow
-
-        return parent::getForeignKeyBaseDeclarationSQL($foreignKey);
     }
 
     /**
@@ -1371,18 +1199,16 @@ class ASEPlatform extends AbstractPlatform
      */
     public function getListNamespacesSQL()
     {
-        #todo check
-        #todo checknow
-
         return "SELECT name FROM master.dbo.sysusers WHERE name NOT IN('guest')";
     }
 
     /**
      * {@inheritdoc}
+     *
+     * @todo Where is this used? Which information should be retrieved?
      */
     public function getListTableConstraintsSQL($table)
     {
-        #todo check
         throw DBALException::notSupported(__METHOD__);
     }
 
@@ -1441,9 +1267,6 @@ class ASEPlatform extends AbstractPlatform
      */
     public function getListViewsSQL($database)
     {
-        #todo check
-        #todo checknow
-
         if ($database != null) {
             $prefix = $database . ".dbo.";
         }
@@ -1662,9 +1485,6 @@ class ASEPlatform extends AbstractPlatform
      */
     public function supportsForeignKeyOnUpdate()
     {
-        #todo check
-        #todo checknow
-
         return parent::supportsForeignKeyOnUpdate();
     }
 
@@ -1673,9 +1493,6 @@ class ASEPlatform extends AbstractPlatform
      */
     public function supportsSchemas()
     {
-        #todo check
-        #todo checknow
-
         // ASE supports schemas, but not in the way doctrine works with them
         return false;
     }
@@ -1826,8 +1643,6 @@ class ASEPlatform extends AbstractPlatform
      */
     public function fixSchemaElementName($schemaElementName)
     {
-        #todo check
-        #todo checknow
         $maxIdentifierLength = $this->getMaxIdentifierLength();
 
         if (strlen($schemaElementName) > $maxIdentifierLength) {

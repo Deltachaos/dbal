@@ -25,7 +25,7 @@ use Doctrine\DBAL\Driver\PDOConnection;
  * Sybase ASE Connection implementation.
  *
  * @since 2.6
- * @author Maximilian Ruta <mr@xtain.net>
+ * @author Maximilian Ruta <Maximilian.Ruta@partner.commerzbank.com>
  */
 class Connection extends PDOConnection implements \Doctrine\DBAL\Driver\Connection
 {

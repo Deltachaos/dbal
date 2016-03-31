@@ -25,7 +25,7 @@ use Doctrine\DBAL\Driver\AbstractASEDriver;
  * Driver for ext/sybase_ct.
  *
  * @since 2.6
- * @author Maximilian Ruta <mr@xtain.net>
+ * @author Maximilian Ruta <Maximilian.Ruta@partner.commerzbank.com>
  */
 class Driver extends AbstractASEDriver
 {
