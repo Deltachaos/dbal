@@ -136,17 +136,32 @@ class ASEConnection implements Connection, ServerInfoAwareConnection
 
     public function reconnect()
     {
-        file_put_contents("/var/sybase/www/mr/demo-prototype/test.log", "Connect (".$this->database.")\n\n", \FILE_APPEND);
-
         $this->close();
 
+        $error = null;
+        $oldHandler = set_error_handler(function($code, $message, $file, $row) use (&$error) {
+            $error = $message;
+            return true;
+        });
         try {
             $this->connectionResource = sybase_connect($this->server, $this->username, $this->password, $this->charset, $this->appname, true);
         } catch (\Throwable $e) {
+            set_error_handler($oldHandler);
             throw DBALException::driverException($this->driver, ASEMessageHandler::fromThrowable($e));
         } catch (\Exception $e) {
+            set_error_handler($oldHandler);
             throw DBALException::driverException($this->driver, ASEMessageHandler::fromThrowable($e));
         }
+        set_error_handler($oldHandler);
+
+        if (!is_resource($this->connectionResource) || $error !== null) {
+            if ($error === null) {
+                $error = "Unable to connect";
+            }
+
+            throw DBALException::driverException($this->driver, new ASEDriverException($error));
+        }
+
         if ($this->messageHandler instanceof  ASEMessageHandler) {
             $this->messageHandler->setResource($this->connectionResource);
         } else {

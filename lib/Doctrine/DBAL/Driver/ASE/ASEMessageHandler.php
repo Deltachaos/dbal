@@ -98,7 +98,6 @@ class ASEMessageHandler
 
         sybase_set_message_handler(function($id, $severity, $state, $line, $text) use ($self) {
             $self->messages[] = new ASEDriverException($text, $severity, null, $state, $line, $id);
-            file_put_contents("/var/sybase/www/mr/demo-prototype/test.log", "MSG: " . $text . "\n", \FILE_APPEND);
             foreach ($this->logger as $logger) {
                 $logger($id, $severity, $state, $line, $text);
             }
