@@ -1567,4 +1567,9 @@ abstract class AbstractPlatformTestCase extends \Doctrine\Tests\DbalTestCase
     {
         $this->assertSame($this->getMaxIndexColumns(), $this->_platform->getMaxIndexColumns());
     }
+
+    public function testSelectAliasColumn()
+    {
+        $this->assertSame('foo AS bar', $this->_platform->selectAliasColumn('foo', 'bar'));
+    }
 }
