@@ -34,8 +34,10 @@ class TemporaryTableTest extends \Doctrine\Tests\DbalFunctionalTestCase
     public function testDropTemporaryTableNotAutoCommitTransaction()
     {
         if ($this->_conn->getDatabasePlatform()->getName() == 'sqlanywhere' ||
+            $this->_conn->getDatabasePlatform()->getName() == 'ase' ||
             $this->_conn->getDatabasePlatform()->getName() == 'oracle') {
-            $this->markTestSkipped("Test does not work on Oracle and SQL Anywhere.");
+            $this->markTestSkipped("Test does not work on Oracle, SQL Anywhere and ASE.");
+            return;
         }
 
         $platform = $this->_conn->getDatabasePlatform();
@@ -72,8 +74,10 @@ class TemporaryTableTest extends \Doctrine\Tests\DbalFunctionalTestCase
     public function testCreateTemporaryTableNotAutoCommitTransaction()
     {
         if ($this->_conn->getDatabasePlatform()->getName() == 'sqlanywhere' ||
+            $this->_conn->getDatabasePlatform()->getName() == 'ase' ||
             $this->_conn->getDatabasePlatform()->getName() == 'oracle') {
-            $this->markTestSkipped("Test does not work on Oracle and SQL Anywhere.");
+            $this->markTestSkipped("Test does not work on Oracle, SQL Anywhere and ASE.");
+            return;
         }
 
         $platform = $this->_conn->getDatabasePlatform();
