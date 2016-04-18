@@ -2655,6 +2655,20 @@ abstract class AbstractPlatform
     }
 
     /**
+     * Some platforms need to convert aliases to workaround identity columns in deferred tables.
+     *
+     * @param string $column
+     * @param string $alias
+     * @param array  $mapping
+     *
+     * @return string
+     */
+    public function selectAliasColumn($column, $alias, array $mapping = array())
+    {
+        return $column . ' AS ' . $alias;
+    }
+
+    /**
      * Some platforms have datetime strings that needs to be correctly converted
      *
      * The default conversion tries to convert value into string with the defined time format
