@@ -136,21 +136,21 @@ abstract class AbstractASEDriver implements Driver, ExceptionConverterDriver, Ve
                 return new Exception\UniqueConstraintViolationException($message, $exception);
             case preg_match('/^.*not found. Specify owner\.objectname/', $exception->getMessage()):
                 return new Exception\TableNotFoundException($message, $exception);
-            case preg_match('/^There is already an object named /', $exception->getMessage()):
+            case preg_match('/There is already an object named /', $exception->getMessage()):
                 return new Exception\TableExistsException($message, $exception);
-            case preg_match('/^Foreign key constraint violation occurred/i', $exception->getMessage()):
-            case preg_match('/^Dependent foreign key constraint violation in a referential integrity constraint/i', $exception->getMessage()):
+            case preg_match('/Foreign key constraint violation occurred/i', $exception->getMessage()):
+            case preg_match('/Dependent foreign key constraint violation in a referential integrity constraint/i', $exception->getMessage()):
             case preg_match('/there are referential constraints defined/i', $exception->getMessage()):
                 return new Exception\ForeignKeyConstraintViolationException($message, $exception);
-            case preg_match('/^The column value in table .* does not allow null values/i', $exception->getMessage()):
+            case preg_match('/The column value in table .* does not allow null values/i', $exception->getMessage()):
                 return new Exception\NotNullConstraintViolationException($message, $exception);
-            case preg_match('/^Invalid column name/i', $exception->getMessage()):
+            case preg_match('/Invalid column name/i', $exception->getMessage()):
                 return new Exception\InvalidFieldNameException($message, $exception);
-            case preg_match('/^Ambiguous column name/i', $exception->getMessage()):
+            case preg_match('/Ambiguous column name/i', $exception->getMessage()):
                 return new Exception\NonUniqueFieldNameException($message, $exception);
-            case preg_match('/^Incorrect syntax near/i', $exception->getMessage()):
+            case preg_match('/Incorrect syntax near/i', $exception->getMessage()):
                 return new Exception\SyntaxErrorException($message, $exception);
-            case preg_match('/^Sybase:[\s]+Unable to connect/i', $exception->getMessage()):
+            case preg_match('/Sybase:[\s]+Unable to connect/i', $exception->getMessage()):
                 return new Exception\ConnectionException($message, $exception);
         }
 
