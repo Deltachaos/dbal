@@ -280,6 +280,8 @@ class ASEStatement implements IteratorAggregate, Statement
 
         $this->messageHandler->addLogger($logMessages);
 
+        sybase_deadlock_retry_count(0);
+
         $this->stmt = sybase_query($prepared, $this->connectionResource);
         $this->messageHandler->removeLogger($logMessages);
         $this->messages = $messages;
