@@ -50,7 +50,7 @@ class BigIntType extends Type
      */
     public function getBindingType()
     {
-        return \PDO::PARAM_STR;
+        return \PDO::PARAM_INT;
     }
 
     /**
@@ -58,6 +58,6 @@ class BigIntType extends Type
      */
     public function convertToPHPValue($value, AbstractPlatform $platform)
     {
-        return (null === $value) ? null : (string) $value;
+        return (null === $value) ? null : (int) $value;
     }
 }
