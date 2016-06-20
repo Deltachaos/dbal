@@ -180,6 +180,7 @@ class ASEPlatform extends AbstractPlatform
         } else {
             switch ($type) {
                 case \PDO::PARAM_INT:
+                case \PDO::PARAM_BOOL:
                     return $value;
                 case \PDO::PARAM_STR:
                 default:
