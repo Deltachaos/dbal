@@ -267,7 +267,8 @@ class ASEPlatform extends AbstractPlatform
      */
     public function getIntegerTypeDeclarationSQL(array $field)
     {
-        return 'INT' . $this->_getCommonIntegerTypeDeclarationSQL($field);
+        return $this->_getCommonIntegerUnsignedDeclarationSQL($field) . 'INT' .
+            $this->_getCommonIntegerTypeDeclarationSQL($field);
     }
 
     /**
@@ -275,7 +276,8 @@ class ASEPlatform extends AbstractPlatform
      */
     public function getBigIntTypeDeclarationSQL(array $field)
     {
-        return 'BIGINT' . $this->_getCommonIntegerTypeDeclarationSQL($field);
+        return $this->_getCommonIntegerUnsignedDeclarationSQL($field) . 'BIGINT' .
+            $this->_getCommonIntegerTypeDeclarationSQL($field);
     }
 
     /**
@@ -283,7 +285,8 @@ class ASEPlatform extends AbstractPlatform
      */
     public function getSmallIntTypeDeclarationSQL(array $field)
     {
-        return 'SMALLINT' . $this->_getCommonIntegerTypeDeclarationSQL($field);
+        return $this->_getCommonIntegerUnsignedDeclarationSQL($field) . 'SMALLINT' .
+            $this->_getCommonIntegerTypeDeclarationSQL($field);
     }
 
     /**
@@ -292,6 +295,14 @@ class ASEPlatform extends AbstractPlatform
     protected function _getCommonIntegerTypeDeclarationSQL(array $columnDef)
     {
         return (!empty($columnDef['autoincrement'])) ? ' IDENTITY' : '';
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    protected function _getCommonIntegerUnsignedDeclarationSQL(array $columnDef)
+    {
+        return !empty($columnDef['unsigned']) ? ' UNSIGNED ' : '';
     }
 
     /**
