@@ -49,6 +49,10 @@ class TimeType extends Type
      */
     public function convertToDatabaseValue($value, AbstractPlatform $platform)
     {
+        if (null === $value) {
+            return $value;
+        }
+
         return $platform->convertTimeToDatabaseValue($value);
     }
 
@@ -57,7 +61,7 @@ class TimeType extends Type
      */
     public function convertToPHPValue($value, AbstractPlatform $platform)
     {
-        if ($value === null) {
+        if ($value === null || $value instanceof \DateTime) {
             return $value;
         }
 

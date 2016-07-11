@@ -67,6 +67,10 @@ class DateTimeTzType extends Type
      */
     public function convertToDatabaseValue($value, AbstractPlatform $platform)
     {
+        if (null === $value) {
+            return $value;
+        }
+
         return $platform->convertDateTimeTzToDatabaseValue($value);
     }
 
@@ -75,7 +79,7 @@ class DateTimeTzType extends Type
      */
     public function convertToPHPValue($value, AbstractPlatform $platform)
     {
-        if ($value === null) {
+        if ($value === null || $value instanceof \DateTime) {
             return $value;
         }
 

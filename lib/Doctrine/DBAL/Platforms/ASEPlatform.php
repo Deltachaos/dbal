@@ -165,7 +165,7 @@ class ASEPlatform extends AbstractPlatform
      */
     public static function quote($value, $type=null)
     {
-        if (is_null($value) || $value === '') {
+        if (is_null($value)) {
             return 'NULL';
         }
 
