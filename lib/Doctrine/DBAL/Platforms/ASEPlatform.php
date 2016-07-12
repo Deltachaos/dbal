@@ -696,6 +696,13 @@ class ASEPlatform extends AbstractPlatform
         }
         $query .= ')';
 
+        $lock = 'datarows';
+        if (isset($options['lock'])) {
+            $lock = strtolower(trim($options['lock']));
+        }
+
+        $query .= ' LOCK ' . $lock;
+
         $sql[] = $query;
 
         if (isset($options['indexes']) && !empty($options['indexes'])) {
@@ -1497,7 +1504,7 @@ class ASEPlatform extends AbstractPlatform
      */
     public function supportsForeignKeyOnUpdate()
     {
-        return parent::supportsForeignKeyOnUpdate();
+        return false;
     }
 
     /**
