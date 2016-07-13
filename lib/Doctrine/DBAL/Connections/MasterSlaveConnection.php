@@ -25,6 +25,7 @@ use Doctrine\DBAL\Configuration;
 use Doctrine\Common\EventManager;
 use Doctrine\DBAL\Event\ConnectionEventArgs;
 use Doctrine\DBAL\Events;
+use Doctrine\DBAL\Exception\ConnectionException;
 
 /**
  * Master-Slave Connection
@@ -208,7 +209,24 @@ class MasterSlaveConnection extends Connection
 
         $driverOptions = isset($params['driverOptions']) ? $params['driverOptions'] : array();
 
-        $connectionParams = $this->chooseConnectionConfiguration($connectionName, $params);
+        return $connectionName == 'master' ?
+            $this->connectToMaster($params, $driverOptions) :
+            $this->connectToSlave($params, $driverOptions);
+    }
+
+    /**
+     * Connets to a master
+     *
+     * @param array $params
+     * @param array $driverOptions
+     *
+     * @return Driver\Connection
+     *
+     * @throws ConnectionException
+     */
+    private function connectToMaster($params, $driverOptions)
+    {
+        $connectionParams = $params['master'];
 
         $user = isset($connectionParams['user']) ? $connectionParams['user'] : null;
         $password = isset($connectionParams['password']) ? $connectionParams['password'] : null;
@@ -217,18 +235,37 @@ class MasterSlaveConnection extends Connection
     }
 
     /**
-     * @param string $connectionName
-     * @param array  $params
+     * Connets to a random slave and tries others until if found a server that is alive
      *
-     * @return mixed
+     * @param array $params
+     * @param array $driverOptions
+     *
+     * @return Driver\Connection
+     *
+     * @throws ConnectionException
      */
-    protected function chooseConnectionConfiguration($connectionName, $params)
+    private function connectToSlave($params, $driverOptions)
     {
-        if ($connectionName === 'master') {
-            return $params['master'];
+        shuffle($params['slaves']);
+
+        while($connectionParams = array_pop($params['slaves'])) {
+            $user = isset($connectionParams['user']) ? $connectionParams['user'] : null;
+            $password = isset($connectionParams['password']) ? $connectionParams['password'] : null;
+
+            try {
+                return $this->_driver->connect($connectionParams, $user, $password, $driverOptions);
+            } catch (ConnectionException $e) {
+                // try next one
+            }
         }
 
-        return $params['slaves'][array_rand($params['slaves'])];
+        $previous = null;
+
+        if (isset($e) && $e->getPrevious() instanceof \Doctrine\DBAL\Driver\DriverException) {
+            $previous = $e->getPrevious();
+        }
+
+        throw new ConnectionException('No slaves are available', $previous);
     }
 
     /**
