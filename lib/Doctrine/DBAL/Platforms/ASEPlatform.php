@@ -1272,7 +1272,7 @@ class ASEPlatform extends AbstractPlatform
         }
 
         return 'SELECT  col.name,
-                        t.name,
+                        t.name as \'type\',
                         col.length,
                         (
                             CASE WHEN
