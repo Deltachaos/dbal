@@ -1253,7 +1253,7 @@ class ASEPlatform extends AbstractPlatform
                               1
                             END
                         ) AS notnull,
-                        "" AS [default],
+                        \'\' AS [default],
                         col.scale,
                         col.prec as precision,
                         (
@@ -1265,11 +1265,11 @@ class ASEPlatform extends AbstractPlatform
                               0
                             END
                         ) AS autoincrement,
-                        "NULL" AS [collation],
-                        "" AS [comment]
+                        \'NULL\' AS [collation],
+                        \'\' AS [comment]
                 FROM ' . $prefix . 'syscolumns AS col
                 JOIN ' . $prefix . 'systypes AS t ON t.usertype = col.usertype
-                WHERE col.id = object_id("' . $prefix . $table .'")
+                WHERE col.id = object_id(\'' . $prefix . $table .'\')
         ';
     }
 
@@ -1290,7 +1290,7 @@ class ASEPlatform extends AbstractPlatform
             $prefix = $database . ".dbo.";
         }
 
-        return 'SELECT name FROM '.$prefix.'sysobjects WHERE type = "V" AND name != "sysquerymetrics" ORDER BY name';
+        return 'SELECT name FROM '.$prefix.'sysobjects WHERE type = \'V\' AND name != \'sysquerymetrics\' ORDER BY name';
     }
 
     /**
@@ -1309,7 +1309,7 @@ class ASEPlatform extends AbstractPlatform
             return '
                 SELECT
                     idx.name AS name,
-                    index_col("' . $prefix . $table .'", idx.indid, '.$i.') AS column_name,
+                    index_col(\'' . $prefix . $table .'\', idx.indid, '.$i.') AS column_name,
                     (
                       CASE WHEN
                         idx.status & 2 = 2
@@ -1328,14 +1328,14 @@ class ASEPlatform extends AbstractPlatform
                         0
                       END
                     ) AS [primary],
-                    "" as flags,
+                    \'\' as flags,
                     idx.indid AS idxpos,
                     '.$i.' AS colpos
                 FROM ' . $prefix . 'sysobjects AS tbl
                 JOIN ' . $prefix . 'sysindexes AS idx on tbl.id = idx.id
                 WHERE
                     idx.keycnt > '.($i - 1).' AND
-                    tbl.id = object_id("' . $prefix . $table .'")
+                    tbl.id = object_id(\'' . $prefix . $table .'\')
             ';
         };
 
@@ -1392,7 +1392,7 @@ class ASEPlatform extends AbstractPlatform
                 JOIN ' . $prefix . 'sysusers AS ru ON ru.uid = ro.uid
                 WHERE
                   c.keycnt > '.($i - 1).' AND
-                  fo.name = "' . $table .'"
+                  fo.name =  \'' . $table .'\'
             ';
         };
 
