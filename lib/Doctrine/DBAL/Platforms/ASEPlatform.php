@@ -356,6 +356,27 @@ class ASEPlatform extends AbstractPlatform
             'varbinary' => 'binary',
             'image' => 'blob',
             'uniqueidentifier' => 'guid',
+            'date' => 'datetime',
+            'daten' => 'date',
+            'datetimn' => 'datetime',
+            'decimaln' => 'decimal',
+            // 'extended type' => 'extended type', # todo ???
+            'floatn' => 'float',
+            'intn' => 'int',
+            'longsysname' => 'string',
+            'moneyn' => 'integer',
+            'numericn' => 'decimal',
+            'sysname' => 'string',
+            'time' => 'time',
+            'timen' => 'time',
+            'timestamp' => 'integer',
+            'ubigint' => 'integer',
+            'uint' => 'integer',
+            'uintn' => 'integer',
+            'unichar' => 'string',
+            'unitext' => 'text',
+            'univarchar' => 'string',
+            'usmallint' => 'smallint'
         );
     }
 
@@ -1338,7 +1359,7 @@ class ASEPlatform extends AbstractPlatform
         $getForIndex = function($i) use($prefix, $table, $currentDatabase) {
             return '
                 SELECT
-                    idx.name AS name,
+                    idx.name AS key_name,
                     index_col(\'' . $prefix . $table .'\', idx.indid, '.$i.') AS column_name,
                     (
                       CASE WHEN
@@ -1378,7 +1399,7 @@ class ASEPlatform extends AbstractPlatform
 
         $sql = '
             SELECT
-                name,
+                key_name,
                 column_name,
                 non_unique,
                 [primary],
