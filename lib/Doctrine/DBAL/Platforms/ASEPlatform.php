@@ -78,7 +78,12 @@ class ASEPlatform extends AbstractPlatform
     /**
      * @const int
      */
-    const CS_DATES_MDYHMS = 3;
+    const CS_DATES_LONG_ALT = 3;
+
+    /**
+     * @const int
+     */
+    const CS_DATES_MDYHMS = 4;
 
     /**
      * @const string
@@ -124,6 +129,21 @@ class ASEPlatform extends AbstractPlatform
      * @const string
      */
     const CS_DATES_LONG_TIME = 'h:i:s:uA';
+
+    /**
+     * @const string
+     */
+    const CS_DATES_LONG_ALT_DATETIME = 'M j Y g:i:s:uA';
+
+    /**
+     * @const string
+     */
+    const CS_DATES_LONG_ALT_DATE = 'M j Y \\1\\2\\:\\0\\0\\:\\0\\0\\:\\0\\0\\0\\0\\0\\0\\A\\M';
+
+    /**
+     * @const string
+     */
+    const CS_DATES_LONG_ALT_TIME = '\\J\\a\\n\\ \\1\\ \\1\\9\\0\\0\\ g:i:s:uA';
 
     /**
      * @const string
@@ -1027,6 +1047,11 @@ class ASEPlatform extends AbstractPlatform
                 $value = preg_replace("/^(.{3})([\\s][0-9][\\s])/", "$1 $2", $value);
                 $value = preg_replace("/(.*?[^\\s])([\\s][0-9]\\:[0-9]+[A-Z]{2})$/", "$1 $2", $value);
                 break;
+            case self::CS_DATES_LONG_ALT:
+                $value = preg_replace("/^(.{3})([\\s][0-9][\\s])/", "$1 $2", $value);
+                $value = preg_replace("/(\\:)([0-9]{3})([0-9]*)(AM|PM)$/", "$1$2$4", $value);
+                $value = preg_replace("/(.*?[^\\s])([\\s][0-9]\\:[0-9]+\\:[0-9]+\\:[0-9]+[A-Z]{2})$/", "$1 $2", $value);
+                break;
         }
 
         return $value;
@@ -1042,6 +1067,11 @@ class ASEPlatform extends AbstractPlatform
             switch ($this->config['date_format']) {
                 case self::CS_DATES_SHORT_ALT:
                     $value = preg_replace("/[\\s]([\\s][0-9]\\:[0-9]+[A-Z]{2})$/", "$1$2", $value);
+                    $value = preg_replace("/^(.{3}[\\s])[\\s]([0-9])/", "$1$2", $value);
+                    break;
+                case self::CS_DATES_LONG_ALT:
+                    $value = preg_replace("/[\\s]([\\s][0-9]\\:[0-9]+[A-Z]{2})$/", "$1$2", $value);
+                    $value = preg_replace("/(\\:)([0-9]{3})[0-9]*(AM|PM)$/", "$1\${2}000$3", $value);
                     $value = preg_replace("/^(.{3}[\\s])[\\s]([0-9])/", "$1$2", $value);
                     break;
             }
@@ -1560,6 +1590,8 @@ class ASEPlatform extends AbstractPlatform
                 return self::CS_DATES_SHORT_DATETIME;
             case self::CS_DATES_LONG:
                 return self::CS_DATES_LONG_DATETIME;
+            case self::CS_DATES_LONG_ALT:
+                return self::CS_DATES_LONG_ALT_DATETIME;
             case self::CS_DATES_MDYHMS:
                 return self::CS_DATES_MDYHMS_DATETIME;
         }
@@ -1579,6 +1611,8 @@ class ASEPlatform extends AbstractPlatform
                 return self::CS_DATES_SHORT_DATE;
             case self::CS_DATES_LONG:
                 return self::CS_DATES_LONG_DATE;
+            case self::CS_DATES_LONG_ALT:
+                return self::CS_DATES_LONG_ALT_DATE;
             case self::CS_DATES_MDYHMS:
                 return self::CS_DATES_MDYHMS_DATE;
         }
@@ -1598,6 +1632,8 @@ class ASEPlatform extends AbstractPlatform
                 return self::CS_DATES_SHORT_TIME;
             case self::CS_DATES_LONG:
                 return self::CS_DATES_LONG_TIME;
+            case self::CS_DATES_LONG_ALT:
+                return self::CS_DATES_LONG_ALT_TIME;
             case self::CS_DATES_MDYHMS:
                 return self::CS_DATES_MDYHMS_TIME;
         }
