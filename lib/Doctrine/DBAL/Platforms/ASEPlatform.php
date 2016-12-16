@@ -118,7 +118,7 @@ class ASEPlatform extends AbstractPlatform
     /**
      * @const string
      */
-    const CS_DATES_LONG_DATETIME = 'M j Y h:i:s:uA';
+    const CS_DATES_LONG_DATETIME = 'M j Y h:i:s:\\0\\0\\0A';
 
     /**
      * @const string
@@ -133,17 +133,17 @@ class ASEPlatform extends AbstractPlatform
     /**
      * @const string
      */
-    const CS_DATES_LONG_ALT_DATETIME = 'M j Y g:i:s:uA';
+    const CS_DATES_LONG_ALT_DATETIME = 'M j Y g:i:s:\\0\\0\\0A';
 
     /**
      * @const string
      */
-    const CS_DATES_LONG_ALT_DATE = 'M j Y \\1\\2\\:\\0\\0\\:\\0\\0\\:\\0\\0\\0\\0\\0\\0\\A\\M';
+    const CS_DATES_LONG_ALT_DATE = 'M j Y \\1\\2\\:\\0\\0\\:\\0\\0\\:\\0\\0\\0\\A\\M';
 
     /**
      * @const string
      */
-    const CS_DATES_LONG_ALT_TIME = '\\J\\a\\n\\ \\1\\ \\1\\9\\0\\0\\ g:i:s:uA';
+    const CS_DATES_LONG_ALT_TIME = '\\J\\a\\n\\ \\1\\ \\1\\9\\0\\0\\ g:i:s:\\0\\0\\0A';
 
     /**
      * @const string

@@ -48,9 +48,9 @@ class Driver extends AbstractASEDriver
             $driverOptions['password'] = $password;
         }
 
-        if (isset($params['platform_options'])) {
-            $driverOptions['platform_options'] = $params['platform_options'];
-            $this->platformOptions = $driverOptions['platform_options'];
+        $this->platformOptions = array();
+        if (isset($driverOptions['date_format'])) {
+            $this->platformOptions['date_format'] = $driverOptions['date_format'];
         }
 
         $connection = new ASEConnection($this, $server, $driverOptions);
