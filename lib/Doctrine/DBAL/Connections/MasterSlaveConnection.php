@@ -230,7 +230,7 @@ class MasterSlaveConnection extends Connection
 
         $user = isset($connectionParams['user']) ? $connectionParams['user'] : null;
         $password = isset($connectionParams['password']) ? $connectionParams['password'] : null;
-
+        
         return $this->_driver->connect($connectionParams, $user, $password, $driverOptions);
     }
 
@@ -251,6 +251,9 @@ class MasterSlaveConnection extends Connection
         while($connectionParams = array_pop($params['slaves'])) {
             $user = isset($connectionParams['user']) ? $connectionParams['user'] : null;
             $password = isset($connectionParams['password']) ? $connectionParams['password'] : null;
+            if (!isset($connectionParams['charset']) && isset($params['master']['charset'])) {
+                $connectionParams['charset'] = $params['master']['charset'];
+            }
 
             try {
                 return $this->_driver->connect($connectionParams, $user, $password, $driverOptions);
