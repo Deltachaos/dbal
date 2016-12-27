@@ -40,6 +40,10 @@ class Driver extends AbstractASEDriver
             $driverOptions['dbname'] = $params['dbname'];
         }
 
+        if (isset($params['charset'])) {
+            $driverOptions['charset'] = $params['charset'];
+        }
+
         if (isset($username)) {
             $driverOptions['user'] = $username;
         }
