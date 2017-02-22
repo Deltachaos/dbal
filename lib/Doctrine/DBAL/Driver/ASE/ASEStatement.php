@@ -57,7 +57,7 @@ class ASEStatement implements IteratorAggregate, Statement
     /**
      * The ASE statement resource.
      *
-     * @var resource
+     * @var resource|bool
      */
     private $stmt;
 
@@ -165,7 +165,7 @@ class ASEStatement implements IteratorAggregate, Statement
      */
     public function closeCursor()
     {
-        if ($this->stmt) {
+        if (is_resource($this->stmt)) {
             sybase_free_result($this->stmt);
         }
     }
@@ -175,7 +175,11 @@ class ASEStatement implements IteratorAggregate, Statement
      */
     public function columnCount()
     {
-        return sybase_num_fields($this->stmt);
+        if (is_resource($this->stmt)) {
+            return sybase_num_fields($this->stmt);
+        }
+
+        return 0;
     }
 
     /**
@@ -294,7 +298,7 @@ class ASEStatement implements IteratorAggregate, Statement
             throw $this->messageHandler->getLastException();
         }
 
-        if ($this->lastInsertId) {
+        if ($this->lastInsertId && is_resource($this->stmt)) {
             $row = sybase_fetch_row($this->stmt);
             if ($row === false || count($row) < 1) {
                 throw $this->messageHandler->getLastException();
