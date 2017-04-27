@@ -49,6 +49,10 @@ abstract class AbstractASEDriver implements Driver, ExceptionConverterDriver, Ve
     {
         // you have to enable quoted_identifier in sybase to use them
         $connection->exec("SET quoted_identifier ON");
+
+        if (isset($this->platformOptions['textsize'])) {
+            $connection->exec("SET textsize " . $this->platformOptions['textsize']);
+        }
     }
 
     /**
