@@ -229,7 +229,6 @@ class ASEStatement implements IteratorAggregate, Statement
             if (is_numeric($name)) {
                 $quotedNumberedParams[$name] = $value;
             } else {
-                $name = ':' . $name;
                 $quotedNamedParams[$name] = $value;
             }
 
