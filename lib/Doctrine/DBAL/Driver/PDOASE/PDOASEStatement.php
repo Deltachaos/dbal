@@ -19,51 +19,56 @@
 
 namespace Doctrine\DBAL\Driver\PDOASE;
 
-use Doctrine\DBAL\Driver\PDOConnection;
+use Doctrine\DBAL\Driver\PDOStatement;
 
 /**
- * Sybase ASE Connection implementation.
+ * PDOASE Statement.
  *
  * @since 2.6
  * @author Maximilian Ruta <Maximilian.Ruta@partner.commerzbank.com>
  */
-class Connection extends PDOConnection implements \Doctrine\DBAL\Driver\Connection
+class PDOASEStatement extends PDOStatement
 {
     /**
-     * @var string
-     */
-    protected $class;
-
-    /**
-     * @param string      $dsn
-     * @param string|null $user
-     * @param string|null $password
-     * @param array|null  $options
+     * @param mixed $value
+     * @param int   $type
      *
-     * @throws PDOException in case of an error.
+     * @return mixed
      */
-    public function __construct($dsn, $user = null, $password = null, array $options = null)
+    protected function fixType($value, $type = \PDO::PARAM_STR)
     {
-        parent::__construct($dsn, $user, $password, $options);
-        $this->setAttribute(\PDO::ATTR_STATEMENT_CLASS, array('Doctrine\DBAL\Driver\PDOASE\PDOASEStatement', array()));
+        switch ($type) {
+            case \PDO::PARAM_NULL:
+                return null;
+            case \PDO::PARAM_INT:
+                $float = floatval($value);
+                $int = intval($float);
+                if ($float && $int != $float) {
+                    return $float;
+                }
+
+                return $int;
+            case \PDO::PARAM_BOOL:
+                return $value ? 1 : 0;
+        }
+
+        return $value;
     }
 
     /**
      * {@inheritdoc}
      */
-    public function getServerVersion()
+    public function bindValue($param, $value, $type = \PDO::PARAM_STR)
     {
-        // The PDO version method is not supported by dblib currently
-        $result = $this->prepare('SELECT @@version');
-        $result->execute();
-        return $result->fetchColumn(0);
+        return parent::bindValue($param, $this->fixType($value, $type), $type);
     }
 
     /**
      * {@inheritdoc}
      */
-    public function requiresQueryForServerVersion()
+    public function bindParam($column, &$variable, $type = \PDO::PARAM_STR, $length = null, $driverOptions = null)
     {
-        return true;
+        $variable = $this->fixType($variable, $type);
+        return parent::bindParam($column, $variable, $type, $length, $driverOptions);
     }
 }
