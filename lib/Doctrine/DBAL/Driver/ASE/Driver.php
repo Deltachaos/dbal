@@ -55,6 +55,8 @@ class Driver extends AbstractASEDriver
         $this->platformOptions = array();
         if (isset($driverOptions['date_format'])) {
             $this->platformOptions['date_format'] = $driverOptions['date_format'];
+        } else {
+            $this->platformOptions['date_format'] = ASEPlatform::CS_DATES_SHORT_ALT;
         }
         if (isset($driverOptions['textsize'])) {
             $this->platformOptions['textsize'] = $driverOptions['textsize'];

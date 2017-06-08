@@ -33,6 +33,16 @@ class Driver extends AbstractASEDriver
      */
     public function connect(array $params, $username = null, $password = null, array $driverOptions = array())
     {
+        $this->platformOptions = array();
+        if (isset($driverOptions['date_format'])) {
+            $this->platformOptions['date_format'] = $driverOptions['date_format'];
+        } else {
+            $this->platformOptions['date_format'] = ASEPlatform::CS_ANSI;
+        }
+        if (isset($driverOptions['textsize'])) {
+            $this->platformOptions['textsize'] = $driverOptions['textsize'];
+        }
+
         $connection = new Connection(
             $this->_constructPdoDsn($params),
             $username,

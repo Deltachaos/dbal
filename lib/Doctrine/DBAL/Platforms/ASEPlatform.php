@@ -86,6 +86,11 @@ class ASEPlatform extends AbstractPlatform
     const CS_DATES_MDYHMS = 4;
 
     /**
+     * @const int
+     */
+    const CS_ANSI = -1;
+
+    /**
      * @const string
      */
     const CS_DATES_SHORT_ALT_DATETIME = 'M j Y g:iA';
@@ -175,7 +180,7 @@ class ASEPlatform extends AbstractPlatform
         $this->config = $config;
 
         if (!isset($this->config['date_format'])) {
-            $this->config['date_format'] = self::CS_DATES_SHORT_ALT;
+            $this->config['date_format'] = self::CS_ANSI;
         }
     }
 
@@ -1617,7 +1622,7 @@ class ASEPlatform extends AbstractPlatform
                 return self::CS_DATES_MDYHMS_DATETIME;
         }
 
-        throw DBALException::notSupported(__METHOD__);
+        return parent::getDateTimeFormatString();
     }
 
     /**
@@ -1638,7 +1643,7 @@ class ASEPlatform extends AbstractPlatform
                 return self::CS_DATES_MDYHMS_DATE;
         }
 
-        throw DBALException::notSupported(__METHOD__);
+        return parent::getDateFormatString();
     }
 
     /**
@@ -1659,7 +1664,7 @@ class ASEPlatform extends AbstractPlatform
                 return self::CS_DATES_MDYHMS_TIME;
         }
 
-        throw DBALException::notSupported(__METHOD__);
+        return parent::getTimeFormatString();
     }
 
     /**
