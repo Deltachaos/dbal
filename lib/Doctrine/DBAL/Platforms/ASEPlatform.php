@@ -1691,7 +1691,7 @@ class ASEPlatform extends AbstractPlatform
         $end     = $offset + $limit;
 
         // We'll find a SELECT or SELECT distinct and prepend TOP n to it
-        $selectPattern = '/^(\s*SELECT\s+(?:DISTINCT\s+)?)(.*?)(.*)(FROM\s+.*)$/i';
+        $selectPattern = '/^(\s*SELECT\s+(?:DISTINCT\s+)?)(.*?)(.*)(\s+FROM\s+.*)$/i';
         $parts = array();
         $matches = array();
         if (preg_match($selectPattern, $query, $matches)) {
@@ -1701,7 +1701,7 @@ class ASEPlatform extends AbstractPlatform
             $parts['from'] = $matches[3] . $intoPart;
 
             $matchesFrom = array();
-            if (!preg_match('/SELECT.*[\s]FROM.*$/i', $matches[3]) && preg_match('/^(.*)[\s]FROM(.*)$/i', $matches[3], $matchesFrom)) {
+            if (!preg_match('/SELECT.*\s+FROM.*$/i', $matches[3]) && preg_match('/^(.*)\s+FROM(.*)$/i', $matches[3], $matchesFrom)) {
                 $parts['from'] = $matchesFrom[1] . $intoPart . " FROM " . $matchesFrom[2];
             }
 
