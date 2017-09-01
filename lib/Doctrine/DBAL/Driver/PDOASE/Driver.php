@@ -20,6 +20,7 @@
 namespace Doctrine\DBAL\Driver\PDOASE;
 
 use Doctrine\DBAL\Driver\AbstractASEDriver;
+use Doctrine\DBAL\Platforms\ASEPlatform;
 
 /**
  * The PDO-based ASE driver.
