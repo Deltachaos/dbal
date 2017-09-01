@@ -35,6 +35,25 @@ class PDOASEStatement extends PDOStatement
      *
      * @return mixed
      */
+    protected function guessType($value)
+    {
+        if (is_scalar($value)) {
+            if (is_int($value) || is_float($value)) {
+                return \PDO::PARAM_INT;
+            } else if (is_bool($value)) {
+                return \PDO::PARAM_BOOL;
+            }
+        }
+
+        return \PDO::PARAM_STR;
+    }
+
+    /**
+     * @param mixed $value
+     * @param int   $type
+     *
+     * @return mixed
+     */
     protected function fixType($value, $type = \PDO::PARAM_STR)
     {
         switch ($type) {
@@ -60,7 +79,15 @@ class PDOASEStatement extends PDOStatement
      */
     public function bindValue($param, $value, $type = \PDO::PARAM_STR)
     {
-        return parent::bindValue($param, $this->fixType($value, $type), $type);
+        if ($type === null) {
+            $type = $this->guessType($value);
+        }
+
+        return parent::bindValue(
+            $param,
+            $this->fixType($value, $type),
+            $type
+        );
     }
 
     /**
@@ -68,7 +95,29 @@ class PDOASEStatement extends PDOStatement
      */
     public function bindParam($column, &$variable, $type = \PDO::PARAM_STR, $length = null, $driverOptions = null)
     {
+        if ($type === null) {
+            $type = $this->guessType($value);
+        }
+
         $variable = $this->fixType($variable, $type);
         return parent::bindParam($column, $variable, $type, $length, $driverOptions);
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function execute($params = null)
+    {
+        if ($params !== null) {
+            foreach ($params as $key => $value) {
+                if (is_int($key)) {
+                    $key++;
+                }
+
+                $this->bindValue($key, $value, null);
+            }
+        }
+
+        return parent::execute();
     }
 }
