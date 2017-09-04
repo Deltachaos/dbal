@@ -96,7 +96,7 @@ class PDOASEStatement extends PDOStatement
     public function bindParam($column, &$variable, $type = \PDO::PARAM_STR, $length = null, $driverOptions = null)
     {
         if ($type === null) {
-            $type = $this->guessType($value);
+            $type = $this->guessType($variable);
         }
 
         $variable = $this->fixType($variable, $type);
@@ -118,6 +118,15 @@ class PDOASEStatement extends PDOStatement
             }
         }
 
-        return parent::execute();
+        $result = parent::execute();
+
+        // forward to the result set which is not empty
+        while ($this->columnCount() == 0) {
+            if (!$this->nextRowset()) {
+                break;
+            }
+        }
+
+        return $result;
     }
 }
