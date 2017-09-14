@@ -60,8 +60,10 @@ abstract class AbstractASEDriver implements Driver, ExceptionConverterDriver, Ve
      */
     public function createDatabasePlatformForVersion($version)
     {
+        $version = preg_replace('/^Adaptive Server Enterprise\//', '', $version);
+
         $matches = [];
-        if (!preg_match('/Adaptive Server Enterprise\/([0-9]+)\.?([0-9]+)?.?([0-9]+)?.?([0-9]+)?(\/.*)?/i', $version, $matches)) {
+        if (!preg_match('/([0-9]+)\.?([0-9]+)?.?([0-9]+)?.?([0-9]+)?(\/.*)?/i', $version, $matches)) {
             throw DBALException::invalidPlatformVersionSpecified(
                 $version,
                 '<product>/<major_version>.<minor_version>.<patch_version>.<build_version>'
