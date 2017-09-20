@@ -17,15 +17,14 @@
  * <http://www.doctrine-project.org>.
  */
 
-namespace Doctrine\DBAL\Driver\PDOASE;
+namespace Doctrine\DBAL\Driver\PDOMSSQL;
 
 use Doctrine\DBAL\Driver\PDOConnection;
 
 /**
- * Sybase ASE Connection implementation.
+ * Sqlsrv Connection implementation.
  *
- * @since 2.6
- * @author Maximilian Ruta <Maximilian.Ruta@partner.commerzbank.com>
+ * @since 2.0
  */
 class Connection extends PDOConnection implements \Doctrine\DBAL\Driver\Connection
 {
